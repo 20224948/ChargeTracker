@@ -35,4 +35,7 @@ yarn-error.*
 # typescript
 *.tsbuildinfo
 
+# ignore idea folder (JetBrains IDE)
+.idea/
+
 app-example
