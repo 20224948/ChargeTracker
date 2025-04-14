@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -40,6 +40,7 @@ const Home = () => {
   });
 
   const [searchedLocation, setSearchedLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [currentLocation, setCurrentLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [address, setAddress] = useState<string>("");
 
   const [chargingStations] = useState<ChargingStation[]>([
@@ -80,6 +81,35 @@ const Home = () => {
       longitude: 153.02,
     },
   ]);
+
+  useEffect(() => {
+    (async () => {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        console.warn("Permission to access location was denied");
+        return;
+      }
+
+      const location = await Location.getCurrentPositionAsync({});
+      const { latitude, longitude } = location.coords;
+
+      setRegion({
+        latitude,
+        longitude,
+        latitudeDelta: 0.05,
+        longitudeDelta: 0.05,
+      });
+
+      setCurrentLocation({ latitude, longitude });
+
+      const geo = await Location.reverseGeocodeAsync({ latitude, longitude });
+      const formatted = geo[0]
+        ? `${geo[0].street || ""} ${geo[0].name || ""}, ${geo[0].city || ""}, ${geo[0].region || ""} ${geo[0].postalCode || ""}`
+        : "Unknown address";
+
+      setAddress(formatted);
+    })();
+  }, []);
 
   const handleRegionChange = (newRegion: Region) => {
     setRegion(newRegion);
@@ -159,7 +189,6 @@ const Home = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Floating search bar */}
       <View style={[styles.overlayContainer, { top: insets.top + 10 }]}>
         <View style={styles.searchBar}>
           <TextInput
@@ -180,7 +209,6 @@ const Home = () => {
         </View>
       </View>
 
-      {/* Map */}
       {Platform.OS !== "web" ? (
         <MapView
           style={styles.map}
@@ -198,11 +226,20 @@ const Home = () => {
               description={station.availability}
             />
           ))}
+
+          {currentLocation && (
+            <Marker
+              coordinate={currentLocation}
+              title="You Are Here"
+              pinColor="blue"
+            />
+          )}
+
           {searchedLocation && (
             <Marker
               coordinate={searchedLocation}
               title="Searched Location"
-              pinColor="blue"
+              pinColor="purple"
             />
           )}
         </MapView>
@@ -214,7 +251,6 @@ const Home = () => {
         </View>
       )}
 
-      {/* Dynamic address label */}
       {address !== "" && (
         <View style={styles.locationHeader}>
           <Text style={styles.locationTitle}>EV Chargers Near Me</Text>
@@ -222,7 +258,6 @@ const Home = () => {
         </View>
       )}
 
-      {/* Station list */}
       <FlatList
         style={{ flexGrow: 0 }}
         data={chargingStations}
@@ -236,14 +271,12 @@ const Home = () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#fff" },
-
   overlayContainer: {
     position: "absolute",
     left: 15,
     right: 15,
     zIndex: 10,
   },
-
   searchBar: {
     flexDirection: "row",
     alignItems: "center",
@@ -257,23 +290,19 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 5,
   },
-
   searchInput: {
     flex: 1,
     fontSize: 16,
     paddingVertical: 6,
     color: "#333",
   },
-
   iconButton: {
     marginLeft: 10,
   },
-
   map: {
     height: "40%",
     marginBottom: 10,
   },
-
   locationHeader: {
     paddingHorizontal: 15,
     paddingVertical: 10,
@@ -282,23 +311,19 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderColor: "#ddd",
   },
-
   locationTitle: {
     fontSize: 16,
     fontWeight: "bold",
     color: "#333",
   },
-
   locationSubText: {
     fontSize: 14,
     color: "#666",
     marginTop: 2,
   },
-
   listContainer: {
     paddingBottom: 20,
   },
-
   stationCard: {
     backgroundColor: "#f9f9f9",
     borderRadius: 8,
@@ -306,47 +331,39 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     elevation: 2,
   },
-
   stationHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     marginBottom: 5,
   },
-
   stationName: {
     fontSize: 16,
     fontWeight: "bold",
     color: "#333",
   },
-
   stationRating: {
     fontSize: 14,
     color: "#555",
   },
-
   stationStatus: {
     fontSize: 14,
     color: "#007BFF",
     marginBottom: 5,
   },
-
   stationAvailability: {
     fontSize: 14,
     fontWeight: "bold",
     marginBottom: 5,
   },
-
   stationPrice: {
     fontSize: 14,
     color: "#555",
     marginBottom: 10,
   },
-
   stationActions: {
     flexDirection: "row",
     justifyContent: "space-between",
   },
-
   actionButton: {
     flex: 1,
     height: 40,
@@ -356,7 +373,6 @@ const styles = StyleSheet.create({
     marginHorizontal: 5,
     backgroundColor: "#007BFF",
   },
-
   actionButtonText: {
     color: "#fff",
     fontSize: 14,
