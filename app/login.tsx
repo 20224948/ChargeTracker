@@ -7,7 +7,12 @@ import {
   TouchableOpacity,
   StyleSheet,
   Modal,
+  Image,
+  Dimensions,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+
+const screenWidth = Dimensions.get("window").width;
 
 const LoginScreen = () => {
   const router = useRouter();
@@ -22,174 +27,207 @@ const LoginScreen = () => {
   const [signupName, setSignupName] = useState("");
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Welcome to Charge Tracker</Text>
+    <>
+      {/* Logo Banner */}
+      <View style={styles.bannerContainer}>
+        <Image
+          source={require("../assets/chargeTrackerLogo.png")}
+          style={styles.bannerImage}
+        />
+      </View>
 
-      {/* Email Input */}
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
-        placeholderTextColor="#aaa"
-        keyboardType="email-address"
-      />
+      <SafeAreaView style={styles.container}>
+        {/* Welcome Text */}
+        <View style={styles.welcomeContainer}>
+          <Text style={styles.welcomeLine}>Welcome to</Text>
+          <Text style={styles.welcomeLine}>Charge Tracker</Text>
+        </View>
 
-      {/* Password Input */}
-      <TextInput
-        style={styles.input}
-        placeholder="Password"
-        placeholderTextColor="#aaa"
-        secureTextEntry
-      />
+        {/* Inputs */}
+        <TextInput
+          style={styles.input}
+          placeholder="Email"
+          placeholderTextColor="#aaa"
+          keyboardType="email-address"
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Password"
+          placeholderTextColor="#aaa"
+          secureTextEntry
+        />
 
-      {/* Forgot Password */}
-      <TouchableOpacity onPress={() => setShowForgotModal(true)}>
-        <Text style={styles.forgotPassword}>Forgot Password?</Text>
-      </TouchableOpacity>
+        {/* Forgot Password */}
+        <TouchableOpacity onPress={() => setShowForgotModal(true)}>
+          <Text style={styles.forgotPassword}>Forgot Password?</Text>
+        </TouchableOpacity>
 
-      {/* Sign In Button */}
-      <TouchableOpacity
-        style={styles.signInButton}
-        onPress={() => {
-          // TODO: Add Firebase auth logic here
-          console.log("Signed in!");
-          router.replace("/about"); // or /home
-        }}
-      >
-        <Text style={styles.signInButtonText}>SIGN IN</Text>
-      </TouchableOpacity>
-
-      {/* Create Account Link */}
-      <Text style={styles.createAccountText}>
-        Don't have an account?{" "}
-        <Text
-          style={styles.createAccountLink}
-          onPress={() => setShowSignupModal(true)}
+        {/* Sign In Button */}
+        <TouchableOpacity
+          style={styles.signInButton}
+          onPress={() => {
+            console.log("Signed in!");
+            router.replace("/home");
+          }}
         >
-          Create an account
+          <Text style={styles.signInButtonText}>SIGN IN</Text>
+        </TouchableOpacity>
+
+        {/* Create Account */}
+        <Text style={styles.createAccountText}>
+          Don’t have an account?{" "}
+          <Text
+            style={styles.createAccountLink}
+            onPress={() => setShowSignupModal(true)}
+          >
+            Create an account
+          </Text>
         </Text>
-      </Text>
 
-      <Text style={styles.orText}>Or</Text>
+        <Text style={styles.orText}>Or</Text>
 
-      {/* Social Buttons */}
-      <TouchableOpacity style={[styles.socialButton, styles.googleButton]}>
-        <Text style={styles.socialButtonText}>CONTINUE WITH GOOGLE</Text>
-      </TouchableOpacity>
+        {/* Google Sign-In */}
+        <TouchableOpacity style={styles.googleButton}>
+          <Image
+            source={{
+              uri: "https://img.icons8.com/color/48/000000/google-logo.png",
+            }}
+            style={styles.googleIcon}
+          />
+          <Text style={styles.googleButtonText}>CONTINUE WITH GOOGLE</Text>
+        </TouchableOpacity>
 
-      {/* ➕ Navigation Button (example use of router.push) */}
-      <TouchableOpacity
-        style={[styles.signInButton, { backgroundColor: "#6c757d" }]}
-        onPress={() => router.push("/about")}
-      >
-        <Text style={styles.signInButtonText}>Go to About</Text>
-      </TouchableOpacity>
+        {/* About */}
+        <TouchableOpacity
+          style={[styles.signInButton, { backgroundColor: "#6c757d" }]}
+          onPress={() => router.push("/about")}
+        >
+          <Text style={styles.signInButtonText}>Go to About</Text>
+        </TouchableOpacity>
 
-      {/* Forgot Password Modal */}
-      <Modal
-        visible={showForgotModal}
-        animationType="slide"
-        transparent
-        onRequestClose={() => setShowForgotModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Reset Your Password</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Enter your email"
-              placeholderTextColor="#aaa"
-              value={resetEmail}
-              onChangeText={setResetEmail}
-              keyboardType="email-address"
-            />
-            <TouchableOpacity
-              style={styles.sendLinkButton}
-              onPress={() => {
-                console.log("Reset link sent to:", resetEmail);
-                setShowForgotModal(false);
-              }}
-            >
-              <Text style={styles.sendLinkText}>Send Reset Link</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => setShowForgotModal(false)}>
-              <Text style={styles.cancelText}>Cancel</Text>
-            </TouchableOpacity>
+        {/* Forgot Password Modal */}
+        <Modal
+          visible={showForgotModal}
+          animationType="slide"
+          transparent
+          onRequestClose={() => setShowForgotModal(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Reset Your Password</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Enter your email"
+                placeholderTextColor="#aaa"
+                value={resetEmail}
+                onChangeText={setResetEmail}
+                keyboardType="email-address"
+              />
+              <TouchableOpacity
+                style={styles.sendLinkButton}
+                onPress={() => {
+                  console.log("Reset link sent to:", resetEmail);
+                  setShowForgotModal(false);
+                }}
+              >
+                <Text style={styles.sendLinkText}>Send Reset Link</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setShowForgotModal(false)}>
+                <Text style={styles.cancelText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
-      </Modal>
+        </Modal>
 
-      {/* Sign Up Modal */}
-      <Modal
-        visible={showSignupModal}
-        animationType="slide"
-        transparent
-        onRequestClose={() => setShowSignupModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Create an Account</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Full Name"
-              placeholderTextColor="#aaa"
-              value={signupName}
-              onChangeText={setSignupName}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Email"
-              placeholderTextColor="#aaa"
-              value={signupEmail}
-              onChangeText={setSignupEmail}
-              keyboardType="email-address"
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Password"
-              placeholderTextColor="#aaa"
-              secureTextEntry
-              value={signupPassword}
-              onChangeText={setSignupPassword}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Confirm Password"
-              placeholderTextColor="#aaa"
-              secureTextEntry
-              value={signupConfirm}
-              onChangeText={setSignupConfirm}
-            />
-            <TouchableOpacity
-              style={styles.sendLinkButton}
-              onPress={() => {
-                console.log("Sign up submitted for:", signupEmail);
-                setShowSignupModal(false);
-              }}
-            >
-              <Text style={styles.sendLinkText}>Sign Up</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => setShowSignupModal(false)}>
-              <Text style={styles.cancelText}>Cancel</Text>
-            </TouchableOpacity>
+        {/* Sign Up Modal */}
+        <Modal
+          visible={showSignupModal}
+          animationType="slide"
+          transparent
+          onRequestClose={() => setShowSignupModal(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Create an Account</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Full Name"
+                placeholderTextColor="#aaa"
+                value={signupName}
+                onChangeText={setSignupName}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Email"
+                placeholderTextColor="#aaa"
+                value={signupEmail}
+                onChangeText={setSignupEmail}
+                keyboardType="email-address"
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Password"
+                placeholderTextColor="#aaa"
+                secureTextEntry
+                value={signupPassword}
+                onChangeText={setSignupPassword}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Confirm Password"
+                placeholderTextColor="#aaa"
+                secureTextEntry
+                value={signupConfirm}
+                onChangeText={setSignupConfirm}
+              />
+              <TouchableOpacity
+                style={styles.sendLinkButton}
+                onPress={() => {
+                  console.log("Sign up submitted for:", signupEmail);
+                  setShowSignupModal(false);
+                }}
+              >
+                <Text style={styles.sendLinkText}>Sign Up</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setShowSignupModal(false)}>
+                <Text style={styles.cancelText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
-      </Modal>
-    </View>
+        </Modal>
+      </SafeAreaView>
+    </>
   );
 };
 
 const styles = StyleSheet.create({
+  bannerContainer: {
+    width: "100%",
+    backgroundColor: "#0F81c7",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingTop: 60,
+    paddingBottom: 10,
+  },
+  bannerImage: {
+    width: "100%",
+    height: 180,
+    resizeMode: "contain",
+  },
   container: {
     flex: 1,
-    padding: 20,
     backgroundColor: "#fff",
+    paddingHorizontal: 20,
     alignItems: "center",
   },
-  title: {
-    fontSize: 20,
-    fontWeight: "bold",
+  welcomeContainer: {
+    alignSelf: "flex-start",
     marginBottom: 20,
-    textAlign: "center",
+  },
+  welcomeLine: {
+    fontSize: 22,
+    fontWeight: "bold",
+    color: "#000",
   },
   input: {
     width: "100%",
@@ -232,24 +270,29 @@ const styles = StyleSheet.create({
   orText: {
     fontSize: 16,
     color: "#555",
-    marginBottom: 20,
-  },
-  socialButton: {
-    width: "100%",
-    height: 50,
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 10,
+    marginBottom: 15,
   },
   googleButton: {
-    borderColor: "#4285F4",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#4285F4",
+    borderRadius: 8,
+    height: 50,
+    width: "100%",
+    marginBottom: 20,
   },
-  socialButtonText: {
+  googleIcon: {
+    width: 24,
+    height: 24,
+    marginRight: 10,
+    backgroundColor: "#fff",
+    borderRadius: 12,
+  },
+  googleButtonText: {
     fontSize: 16,
     fontWeight: "bold",
+    color: "#fff",
   },
   modalOverlay: {
     flex: 1,
