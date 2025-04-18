@@ -1,56 +1,78 @@
 import React, { useState } from "react";
-import { View, StyleSheet, TouchableOpacity, Text, Image } from "react-native";
-import {router} from "expo-router";
-
+import {
+  View,
+  Text,
+  StyleSheet,
+  Image,
+  ScrollView,
+  TouchableOpacity,
+} from "react-native";
+import { useRouter } from "expo-router";
 
 const AddReview = () => {
+  const router = useRouter();
   const [isExpanded1, setIsExpanded1] = useState(false);
-  const [isExpanded2, setIsExpanded2] = useState(false);
   const [isFavourited1, setIsFavourited1] = useState(false);
+  const [isExpanded2, setIsExpanded2] = useState(false);
   const [isFavourited2, setIsFavourited2] = useState(false);
 
-  const toggleExpanded1 = () => setIsExpanded1((prevState) => !prevState);
-  const toggleFavorite1 = () => setIsFavourited1((prevState) => !prevState);
-
-  const toggleExpanded2 = () => setIsExpanded2((prevState) => !prevState);
-  const toggleFavorite2 = () => setIsFavourited2((prevState) => !prevState);
-
   return (
-      <View style={styles.container}>
-        {/* Action Buttons: Check In, Directions, Call */}
-        <View style={styles.actionButtonsContainer}>
-          <TouchableOpacity style={styles.checkInButton}>
-            <Text style={styles.checkInButtonText}>Check In</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.blueButton}>
-            <Text style={styles.blueButtonText}>Directions</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.blueButton}>
-            <Text style={styles.blueButtonText}>Call</Text>
-          </TouchableOpacity>
-        </View>
+    <View style={styles.container}>
+      {/* Top Banner Image */}
+      <Image
+        source={{ uri: "https://via.placeholder.com/400x200" }}
+        style={styles.image}
+      />
 
-        {/* Categories: Overview, Check In, Reviews */}
-        <View style={styles.sectionLabelsContainer}>
-          <Text style={[styles.sectionLabel, styles.fadedLabel]}>Overview</Text>
-          <Text style={[styles.sectionLabel, styles.fadedLabel]}>Check In</Text>
-          <View>
-            <Text style={styles.reviewsLabel}>Reviews</Text>
-            <View style={styles.reviewsUnderline} />
+      {/* Scrollable Content */}
+      <ScrollView style={styles.detailsContainer}>
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.stationName}>Belmont EV Charging Station</Text>
+          <View style={styles.ratingContainer}>
+            <Text style={styles.rating}>4.9</Text>
+            <Text style={styles.star}>⭐</Text>
+            <Text style={styles.reviews}>(309)</Text>
           </View>
+          <Text style={styles.status}>Open 24 Hours</Text>
+          <Text style={styles.availability}>
+            ⚡ Chargers Available @ $0.64 AUD per kWh
+          </Text>
+          <Text style={styles.distance}>Distance: 3km</Text>
         </View>
 
-        {/* Button Row */}
-        <View style={styles.buttonRow}>
-          <TouchableOpacity style={styles.sortButton}>
-            <Text style={styles.sortButtonText}>Sort By</Text>
+        {/* Action Buttons */}
+        <View style={styles.actions}>
+          <TouchableOpacity 
+            style={[styles.actionButton, styles.checkInButton]}
+            onPress={() => router.push("/checkIn")}>
+            <Text style={styles.actionButtonText}>Check In</Text>
           </TouchableOpacity>
+          <TouchableOpacity style={styles.actionButton}>
+            <Text style={styles.actionButtonText}>Directions</Text>
+          </TouchableOpacity>
+        </View>
 
-          <TouchableOpacity style={styles.addButton}
-                            onPress={() => router.push("/postReview")}>
+        {/* Tabs Section */}
+        <View style={styles.tabs}>
+          <TouchableOpacity onPress={() => router.push("/chargingLocation")}>
+            <Text style={styles.tab}>Overview</Text>
+          </TouchableOpacity>
+          <TouchableOpacity>
+            <Text style={[styles.tab, styles.activeTab]}>Reviews</Text>
+          </TouchableOpacity>
+        </View>
 
-            <Text style={styles.addButtonText}>Add Review</Text>
-
+        {/* Sort/Add Row */}
+        <View style={styles.actions}>
+          <TouchableOpacity style={styles.sortButton}>
+            <Text style={styles.actionButtonText}>Sort By</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.actionButton, styles.checkInButton]}
+            onPress={() => router.push("/postReview")}
+          >
+            <Text style={styles.actionButtonText}>Add Review</Text>
           </TouchableOpacity>
         </View>
 
@@ -58,8 +80,8 @@ const AddReview = () => {
         <View style={styles.reviewContainer}>
           <View style={styles.reviewHeader}>
             <Image
-                source={{ uri: "https://images.pexels.com/photos/4567833/pexels-photo-4567833.jpeg" }}
-                style={styles.profilePicture}
+              source={{ uri: "https://images.pexels.com/photos/4567833/pexels-photo-4567833.jpeg" }}
+              style={styles.profilePicture}
             />
             <View>
               <Text style={styles.username}>Caitlin Peacock</Text>
@@ -68,34 +90,30 @@ const AddReview = () => {
           </View>
           <Text style={styles.reviewText}>
             {!isExpanded1
-                ? "Unfortunately, it looks as though this destination charger has been configured for Tesla-only as it doesn't work with a Polestar 2. The number on this listing is incorrect as..."
-                : "Unfortunately, it looks as though this destination charger has been configured for Tesla-only as it doesn't work with a Polestar 2. The number on this listing is incorrect as I tried to call and I couldn't get through."}
+              ? "Unfortunately, this charger didn’t work with my car..."
+              : "Unfortunately, it looks as though this destination charger has been configured for Tesla-only as it doesn't work with a Polestar 2. The number on this listing is incorrect as I tried to call and I couldn't get through."}
           </Text>
-          <TouchableOpacity onPress={toggleExpanded1}>
-            <Text style={styles.moreText}>
-              {isExpanded1 ? "See less" : "More"}
+          <TouchableOpacity onPress={() => setIsExpanded1(!isExpanded1)}>
+            <Text style={styles.moreText}>{isExpanded1 ? "See less" : "More"}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => setIsFavourited1(!isFavourited1)}>
+            <Text
+              style={[
+                styles.heartIcon,
+                { color: isFavourited1 ? "#ff4d4d" : "#808080" },
+              ]}
+            >
+              ❤️
             </Text>
           </TouchableOpacity>
-          <View style={styles.reactionContainer}>
-            <TouchableOpacity onPress={toggleFavorite1} style={styles.actionButton}>
-              <Text
-                  style={[
-                    styles.heartIcon,
-                    { color: isFavourited1 ? "#ff4d4d" : "#808080" },
-                  ]}
-              >
-                ❤️
-              </Text>
-            </TouchableOpacity>
-          </View>
         </View>
 
         {/* Second Review */}
         <View style={styles.reviewContainer}>
           <View style={styles.reviewHeader}>
             <Image
-                source={{ uri: "https://images.pexels.com/photos/1270076/pexels-photo-1270076.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2" }}
-                style={styles.profilePicture}
+              source={{ uri: "https://images.pexels.com/photos/1270076/pexels-photo-1270076.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2" }}
+              style={styles.profilePicture}
             />
             <View>
               <Text style={styles.username}>Stuart Vasepuru</Text>
@@ -104,136 +122,84 @@ const AddReview = () => {
           </View>
           <Text style={styles.reviewText}>
             {!isExpanded2
-                ? "The charger location is fantastic! It's easy to find and situated in a convenient spot with plenty of parking. Charging was faster than..."
-                : "The charger location is fantastic! It's easy to find and situated in a convenient spot with plenty of parking. Charging was faster than expected, and the nearby amenities made the experience even better. Only downside was the wait due to a single charger, but overall a great spot I'd recommend!\n"}
+              ? "The charger location is fantastic! It's easy to find and situated in a convenient spot with plenty of parking. Charging was faster than..."
+              : "The charger location is fantastic! It's easy to find and situated in a convenient spot with plenty of parking. Charging was faster than expected, and the nearby amenities made the experience even better. Only downside was the wait due to a single charger, but overall a great spot I'd recommend!"}
           </Text>
-          <TouchableOpacity onPress={toggleExpanded2}>
-            <Text style={styles.moreText}>
-              {isExpanded2 ? "See less" : "More"}
+          <TouchableOpacity onPress={() => setIsExpanded2(!isExpanded2)}>
+            <Text style={styles.moreText}>{isExpanded2 ? "See less" : "More"}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => setIsFavourited2(!isFavourited2)}>
+            <Text
+              style={[
+                styles.heartIcon,
+                { color: isFavourited2 ? "#ff4d4d" : "#808080" },
+              ]}
+            >
+              ❤️
             </Text>
           </TouchableOpacity>
-          <View style={styles.reactionContainer}>
-            <TouchableOpacity onPress={toggleFavorite2} style={styles.actionButton}>
-              <Text
-                  style={[
-                    styles.heartIcon,
-                    { color: isFavourited2 ? "#ff4d4d" : "#808080" },
-                  ]}
-              >
-                ❤️
-              </Text>
-            </TouchableOpacity>
-          </View>
         </View>
-      </View>
+      </ScrollView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#f9f9f9",
-    padding: 20,
+  container: { flex: 1, backgroundColor: "#fff" },
+  image: { width: "100%", height: 200, resizeMode: "cover" },
+  detailsContainer: { flex: 1, padding: 15 },
+  header: { marginBottom: 15 },
+  stationName: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 5,
   },
-  actionButtonsContainer: {
+  ratingContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 5,
+  },
+  rating: { fontSize: 16, fontWeight: "bold", color: "#333" },
+  star: { fontSize: 16, color: "#FFD700", marginHorizontal: 5 },
+  reviews: { fontSize: 14, color: "#555" },
+  status: { fontSize: 14, color: "#007BFF", marginBottom: 5 },
+  availability: { fontSize: 14, fontWeight: "bold", color: "green", marginBottom: 5 },
+  distance: { fontSize: 14, color: "#555", marginBottom: 15 },
+  actions: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 20,
-    width: "70%",
-    alignSelf: "center",
+    marginBottom: 15,
   },
-  checkInButton: {
-    backgroundColor: "#28a745",
-    paddingHorizontal: 15,
-    paddingVertical: 10,
-    borderRadius: 5,
-  },
-  blueButton: {
-    backgroundColor: "#007bff",
-    paddingHorizontal: 15,
-    paddingVertical: 10,
-    borderRadius: 5,
-  },
-  checkInButtonText: {
-    color: "#fff",
-    fontSize: 14,
-    fontWeight: "600",
-    textAlign: "center",
-  },
-  blueButtonText: {
-    color: "#fff",
-    fontSize: 14,
-    fontWeight: "600",
-    textAlign: "center",
-  },
-  sectionLabelsContainer: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    alignItems: "center",
-    marginBottom: 20,
-    width: "80%",
-  },
-  sectionLabel: {
-    fontSize: 16,
-    color: "#333",
-    fontWeight: "normal",
-    paddingHorizontal: 5,
-  },
-  fadedLabel: {
-    opacity: 0.5, // Lower opacity for inactive labels (Overview, Check In)
-  },
-  reviewsLabel: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#333", // Higher contrast for active label (Reviews)
-    alignSelf: "center",
-  },
-  reviewsUnderline: {
-    height: 3,
-    width: 50,
-    backgroundColor: "#007bff",
-    marginTop: 5,
-    alignSelf: "center",
-  },
-  buttonRow: {
-    flexDirection: "row",
+  actionButton: {
+    flex: 1,
+    height: 40,
+    borderRadius: 8,
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 20,
+    marginHorizontal: 5,
+    backgroundColor: "#007BFF",
   },
-  sortButton: {
-    backgroundColor: "#6c757d",
-    paddingVertical: 15,
-    paddingHorizontal: 25,
-    borderRadius: 8,
-    marginRight: 10,
+  checkInButton: { backgroundColor: "#28a745" },
+  actionButtonText: { color: "#fff", fontSize: 14, fontWeight: "bold" },
+  tabs: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    marginBottom: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: "#ccc",
   },
-  sortButtonText: {
-    color: "#fff",
-    fontSize: 14,
-    fontWeight: "bold",
-    textAlign: "center",
-  },
-  addButton: {
-    backgroundColor: "#28a745",
-    paddingVertical: 15,
-    paddingHorizontal: 25,
-    borderRadius: 8,
-  },
-  addButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "bold",
-    textAlign: "center",
+  tab: { fontSize: 16, color: "#555", paddingBottom: 5 },
+  activeTab: {
+    color: "#007BFF",
+    borderBottomWidth: 2,
+    borderBottomColor: "#007BFF",
   },
   reviewContainer: {
-    marginTop: 20,
     backgroundColor: "#fff",
     borderRadius: 10,
     padding: 15,
-    width: "90%",
+    marginBottom: 20,
     shadowColor: "#000",
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -252,37 +218,32 @@ const styles = StyleSheet.create({
     marginRight: 10,
     backgroundColor: "#ddd",
   },
-  username: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#333",
-  },
-  rating: {
-    fontSize: 14,
-    color: "#ff9500",
-  },
-  reviewText: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: "#555",
-  },
-  moreText: {
-    fontSize: 14,
-    color: "#007bff",
-    textDecorationLine: "underline",
-    marginTop: 5,
-  },
-  reactionContainer: {
-    flexDirection: "row",
+  username: { fontSize: 16, fontWeight: "600", color: "#333" },
+  reviewText: { fontSize: 14, color: "#555", lineHeight: 20 },
+  moreText: { fontSize: 14, color: "#007BFF", marginTop: 5 },
+  heartIcon: { fontSize: 20, marginTop: 10 },
+  sortButton: {
+    flex: 1,
+    height: 40,
+    borderRadius: 8,
+    justifyContent: "center",
     alignItems: "center",
-    marginTop: 15,
-  },
-  heartIcon: {
-    fontSize: 20,
-    marginRight: 5,
-  },
-  actionButton: {
     marginHorizontal: 5,
+    backgroundColor: "#6c757d",
+  },
+  addButton: {
+    flex: 1,
+    height: 40,
+    borderRadius: 8,
+    justifyContent: "center",
+    alignItems: "center",
+    marginHorizontal: 5,
+    backgroundColor: "#28a745",
+  },
+  addButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 14,
   },
 });
 

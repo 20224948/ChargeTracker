@@ -10,19 +10,18 @@ import {
 import { useRouter } from "expo-router";
 
 const ChargingLocation = () => {
-  const router = useRouter(); // Use router for navigation
+  const router = useRouter();
 
   return (
     <View style={styles.container}>
-      {/* Placeholder for Charging Station Image */}
+      {/* Header Image */}
       <Image
-        source={{ uri: "https://via.placeholder.com/400x200" }} // Placeholder image
+        source={{ uri: "https://via.placeholder.com/400x200" }}
         style={styles.image}
       />
 
-      {/* Scrollable Details Section */}
       <ScrollView style={styles.detailsContainer}>
-        {/* Charging Station Header */}
+        {/* Station Header Info */}
         <View style={styles.header}>
           <Text style={styles.stationName}>Belmont EV Charging Station</Text>
           <View style={styles.ratingContainer}>
@@ -39,55 +38,48 @@ const ChargingLocation = () => {
 
         {/* Action Buttons */}
         <View style={styles.actions}>
-          <TouchableOpacity style={[styles.actionButton, styles.checkInButton]}>
+          <TouchableOpacity 
+            style={[styles.actionButton, styles.checkInButton]}
+            onPress={() => router.push("/checkIn")}>
             <Text style={styles.actionButtonText}>Check In</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.actionButton}>
             <Text style={styles.actionButtonText}>Directions</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.actionButton}>
-            <Text style={styles.actionButtonText}>Call</Text>
-          </TouchableOpacity>
         </View>
 
-        {/* Tabs Section */}
+        {/* Tabs */}
         <View style={styles.tabs}>
           <TouchableOpacity>
             <Text style={[styles.tab, styles.activeTab]}>Overview</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => router.push("/checkIn")}>
-            <Text style={styles.tab}>Check In</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={() => router.push("/addReview")}>
             <Text style={styles.tab}>Reviews</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Charging Station Details */}
+        {/* Detail Info */}
         <View style={styles.details}>
           <Text style={styles.detailText}>
             <Text style={styles.detailLabel}>Operator:</Text> Tesla
           </Text>
           <Text style={styles.detailText}>
-            <Text style={styles.detailLabel}>Address:</Text> 123 Belmont Road
-            QLD 4153
+            <Text style={styles.detailLabel}>Address:</Text> 123 Belmont Road QLD 4153
           </Text>
           <Text style={styles.detailText}>
             <Text style={styles.detailLabel}>Rates:</Text> $0.64 AUD per kWh
           </Text>
           <Text style={styles.detailText}>
-            <Text style={styles.detailLabel}>Total Charging Stations:</Text>{" "}
-            48x Type 1 @ 350kWh Chargers
+            <Text style={styles.detailLabel}>Total Charging Stations:</Text> 48x Type 1 @ 350kWh Chargers
           </Text>
           <Text style={styles.detailText}>
-            <Text style={styles.detailLabel}>Charging Stations Available:</Text>{" "}
-            15x Type 1 Chargers
+            <Text style={styles.detailLabel}>Charging Stations Available:</Text> 15x Type 1 Chargers
           </Text>
         </View>
 
-        {/* Placeholder for Additional Content */}
+        {/* Optional image */}
         <Image
-          source={{ uri: "https://via.placeholder.com/400x200" }} // Placeholder image
+          source={{ uri: "https://via.placeholder.com/400x200" }}
           style={styles.additionalImage}
         />
       </ScrollView>
