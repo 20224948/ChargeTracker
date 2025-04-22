@@ -53,12 +53,16 @@ const Settings = () => {
   return (
     <View style={styles.container}>
       {/* Banner Logo */}
-      <View style={styles.bannerContainer}>
+      <TouchableOpacity
+        style={styles.bannerContainer}
+        activeOpacity={0.7}
+        onPress={() => router.push("/home")}
+      >
         <Image
           source={require("../assets/chargeTrackerLogo.png")}
           style={styles.bannerImage}
         />
-      </View>
+      </TouchableOpacity>
 
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
