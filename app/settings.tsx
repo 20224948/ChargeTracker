@@ -67,6 +67,16 @@ const Settings = () => {
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <Text style={styles.settingsHeader}>Settings</Text>
 
+          {/* NAVIGATION: Settings | About */}
+          <View style={styles.tabs}>
+            <TouchableOpacity onPress={() => router.push("/settings")}>
+              <Text style={[styles.tab, styles.activeTab]}>Settings</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => router.push("/about")}>
+              <Text style={styles.tab}>About</Text>
+            </TouchableOpacity>
+          </View>
+
           {/* Form */}
           <View style={styles.form}>
             <View style={styles.row}>
@@ -117,9 +127,7 @@ const Settings = () => {
               />
             </View>
 
-            <Text style={[styles.sectionLabel]}>
-              Charger Type:
-            </Text>
+            <Text style={[styles.sectionLabel]}>Charger Type:</Text>
             <View style={styles.radioContainer}>
               {["Type 1", "Type 2", "Type 3", "Type 4"].map((type) => (
                 <TouchableOpacity
@@ -152,14 +160,6 @@ const Settings = () => {
               onPress={handleSaveChanges}
             >
               <Text style={styles.saveButtonText}>Save Changes</Text>
-            </TouchableOpacity>
-
-            {/* About Link */}
-            <TouchableOpacity
-              style={[styles.saveButton, { backgroundColor: "#6c757d" }]}
-              onPress={() => router.push("/about")}
-            >
-              <Text style={styles.saveButtonText}>About</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -196,7 +196,11 @@ const Settings = () => {
               <Text style={styles.saveButtonText}>Submit</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => setShowPasswordModal(false)}>
-              <Text style={{ color: "red", marginTop: 10, textAlign: "center" }}>Cancel</Text>
+              <Text
+                style={{ color: "red", marginTop: 10, textAlign: "center" }}
+              >
+                Cancel
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -339,6 +343,23 @@ const styles = StyleSheet.create({
     fontSize: 16,
     backgroundColor: "#fff",
     marginBottom: 10,
+  },
+  tabs: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    marginBottom: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: "#ccc",
+  },
+  tab: {
+    fontSize: 16,
+    color: "#555",
+    paddingBottom: 5,
+  },
+  activeTab: {
+    color: "#007BFF",
+    borderBottomWidth: 2,
+    borderBottomColor: "#007BFF",
   },
 });
 
