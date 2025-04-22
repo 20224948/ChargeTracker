@@ -16,18 +16,10 @@ const About = () => {
 
   return (
     <View style={styles.container}>
-{/* Banner Logo */}
-<TouchableOpacity
-  style={styles.bannerContainer}
-  activeOpacity={0.8}
-  onPress={() => router.push("/home")}
->
-  <Image
-    source={require("../assets/chargeTrackerLogo.png")}
-    style={styles.bannerImage}
-  />
-</TouchableOpacity>
-
+      {/* Banner Logo */}
+      <TouchableOpacity
+        style={styles.bannerContainer}
+        activeOpacity={0.8}
         onPress={() => router.push("/home")}
       >
         <Image
