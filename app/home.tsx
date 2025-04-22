@@ -180,9 +180,7 @@ const Home = () => {
         <TouchableOpacity style={styles.actionButton}>
           <Text style={styles.actionButtonText}>Directions</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.actionButton}>
-          <Text style={styles.actionButtonText}>Call</Text>
-        </TouchableOpacity>
+        
       </View>
     </View>
   );

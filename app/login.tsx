@@ -97,14 +97,6 @@ const LoginScreen = () => {
           <Text style={styles.googleButtonText}>CONTINUE WITH GOOGLE</Text>
         </TouchableOpacity>
 
-        {/* About */}
-        <TouchableOpacity
-          style={[styles.signInButton, { backgroundColor: "#6c757d" }]}
-          onPress={() => router.push("/about")}
-        >
-          <Text style={styles.signInButtonText}>Go to About</Text>
-        </TouchableOpacity>
-
         {/* Forgot Password Modal */}
         <Modal
           visible={showForgotModal}
