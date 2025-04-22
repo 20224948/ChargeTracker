@@ -52,9 +52,17 @@ const Settings = () => {
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity
-        style={styles.bannerContainer}
-        activeOpacity={0.8}
+{/* Banner Logo */}
+<TouchableOpacity
+  style={styles.bannerContainer}
+  activeOpacity={0.8}
+  onPress={() => router.push("/home")}
+>
+  <Image
+    source={require("../assets/chargeTrackerLogo.png")}
+    style={styles.bannerImage}
+  />
+</TouchableOpacity>
         onPress={() => router.push("/home")}
       >
         <Image
