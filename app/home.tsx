@@ -14,6 +14,13 @@ import { useRouter } from "expo-router";
 import * as Location from "expo-location";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { initializeApp } from "firebase/app";
+import { getFirestore } from "firebase/firestore";
+import 'firebase.js'
+
+const {firebaseConfig} = require('./firebase.js');
+const app = initializeApp(firebaseConfig);
+
 interface ChargingStation {
   id: string;
   name: string;
