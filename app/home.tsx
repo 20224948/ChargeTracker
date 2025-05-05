@@ -6,7 +6,7 @@ import {
   StyleSheet,
   FlatList,
   TouchableOpacity,
-  Platform,
+  Alert,
 } from "react-native";
 import MapView, { Marker, Region } from "react-native-maps";
 import { Ionicons } from "@expo/vector-icons";
@@ -84,36 +84,40 @@ const Home = () => {
 
   useEffect(() => {
     (async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") {
-        console.warn("Permission to access location was denied");
-        return;
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== "granted") {
+          Alert.alert(
+            "Permission Denied",
+            "Location permission is required to show nearby charging stations."
+          );
+          return;
+        }
+
+        const location = await Location.getCurrentPositionAsync({});
+        const { latitude, longitude } = location.coords;
+
+        setRegion({
+          latitude,
+          longitude,
+          latitudeDelta: 0.05,
+          longitudeDelta: 0.05,
+        });
+
+        setCurrentLocation({ latitude, longitude });
+
+        const geo = await Location.reverseGeocodeAsync({ latitude, longitude });
+        const formatted = geo[0]
+          ? `${geo[0].street || ""} ${geo[0].name || ""}, ${geo[0].city || ""}, ${geo[0].region || ""} ${geo[0].postalCode || ""}`
+          : "Unknown address";
+
+        setAddress(formatted);
+      } catch (error) {
+        console.error("Error fetching location:", error);
+        Alert.alert("Error", "Unable to fetch location. Please try again.");
       }
-
-      const location = await Location.getCurrentPositionAsync({});
-      const { latitude, longitude } = location.coords;
-
-      setRegion({
-        latitude,
-        longitude,
-        latitudeDelta: 0.05,
-        longitudeDelta: 0.05,
-      });
-
-      setCurrentLocation({ latitude, longitude });
-
-      const geo = await Location.reverseGeocodeAsync({ latitude, longitude });
-      const formatted = geo[0]
-        ? `${geo[0].street || ""} ${geo[0].name || ""}, ${geo[0].city || ""}, ${geo[0].region || ""} ${geo[0].postalCode || ""}`
-        : "Unknown address";
-
-      setAddress(formatted);
     })();
   }, []);
-
-  const handleRegionChange = (newRegion: Region) => {
-    setRegion(newRegion);
-  };
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;
@@ -140,11 +144,11 @@ const Home = () => {
 
         setAddress(formatted);
       } else {
-        alert("Location not found.");
+        Alert.alert("Location Not Found", "Unable to find the specified location.");
       }
     } catch (error) {
       console.error("Search error:", error);
-      alert("Unable to find location. Please try again.");
+      Alert.alert("Error", "Unable to find location. Please try again.");
     }
   };
 
@@ -180,7 +184,6 @@ const Home = () => {
         <TouchableOpacity style={styles.actionButton}>
           <Text style={styles.actionButtonText}>Directions</Text>
         </TouchableOpacity>
-        
       </View>
     </View>
   );
@@ -207,47 +210,39 @@ const Home = () => {
         </View>
       </View>
 
-      {Platform.OS !== "web" ? (
-        <MapView
-          style={styles.map}
-          region={region}
-          onRegionChangeComplete={handleRegionChange}
-        >
-          {chargingStations.map((station) => (
-            <Marker
-              key={station.id}
-              coordinate={{
-                latitude: station.latitude,
-                longitude: station.longitude,
-              }}
-              title={station.name}
-              description={station.availability}
-            />
-          ))}
+      <MapView
+        style={styles.map}
+        region={region}
+        onRegionChangeComplete={(newRegion) => setRegion(newRegion)}
+      >
+        {chargingStations.map((station) => (
+          <Marker
+            key={station.id}
+            coordinate={{
+              latitude: station.latitude,
+              longitude: station.longitude,
+            }}
+            title={station.name}
+            description={station.availability}
+          />
+        ))}
 
-          {currentLocation && (
-            <Marker
-              coordinate={currentLocation}
-              title="You Are Here"
-              pinColor="blue"
-            />
-          )}
+        {currentLocation && (
+          <Marker
+            coordinate={currentLocation}
+            title="You Are Here"
+            pinColor="blue"
+          />
+        )}
 
-          {searchedLocation && (
-            <Marker
-              coordinate={searchedLocation}
-              title="Searched Location"
-              pinColor="purple"
-            />
-          )}
-        </MapView>
-      ) : (
-        <View style={[styles.map, { justifyContent: "center", alignItems: "center" }]}>
-          <Text style={{ color: "#888" }}>
-            Map not available on web preview. Use Expo Go.
-          </Text>
-        </View>
-      )}
+        {searchedLocation && (
+          <Marker
+            coordinate={searchedLocation}
+            title="Searched Location"
+            pinColor="purple"
+          />
+        )}
+      </MapView>
 
       {address !== "" && (
         <View style={styles.locationHeader}>
