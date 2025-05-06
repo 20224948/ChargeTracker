@@ -59,7 +59,7 @@ const Settings = () => {
         onPress={() => router.push("/home")}
       >
         <Image
-          source={require("../assets/chargeTrackerLogo.png")}
+          source={require("../assets/images/chargeTrackerLogo.png")}
           style={styles.bannerImage}
         />
       </TouchableOpacity>
@@ -133,7 +133,7 @@ const Settings = () => {
 
             <Text style={[styles.sectionLabel]}>Charger Type:</Text>
             <View style={styles.radioContainer}>
-              {["Type 1", "Type 2", "Type 3", "Type 4"].map((type) => (
+              {["CCS", "CHAdeMO", "Type 2"].map((type) => (
                 <TouchableOpacity
                   key={type}
                   style={styles.radioOption}
@@ -148,14 +148,6 @@ const Settings = () => {
                   <Text style={styles.radioLabel}>{type}</Text>
                 </TouchableOpacity>
               ))}
-            </View>
-
-            <View style={styles.row}>
-              <Text style={styles.label}>Notifications:</Text>
-              <Switch
-                value={notificationsEnabled}
-                onValueChange={setNotificationsEnabled}
-              />
             </View>
 
             {/* Save Button */}

@@ -4,24 +4,24 @@ import {
   Text,
   StyleSheet,
   Image,
-  ScrollView,
   TouchableOpacity,
+  ScrollView,
 } from "react-native";
 import { useRouter } from "expo-router";
 
-const ChargingLocation = () => {
+const CheckIn = () => {
   const router = useRouter();
 
   return (
     <View style={styles.container}>
-      {/* Header Image */}
+      {/* Station Header Image */}
       <Image
-        source={{ uri: "https://via.placeholder.com/400x200" }}
+        source={{ uri: "https://via.placeholder.com/400x200" }} // Replace with actual image later
         style={styles.image}
       />
 
       <ScrollView style={styles.detailsContainer}>
-        {/* Station Header Info */}
+        {/* Station Summary */}
         <View style={styles.header}>
           <Text style={styles.stationName}>Belmont EV Charging Station</Text>
           <View style={styles.ratingContainer}>
@@ -36,11 +36,12 @@ const ChargingLocation = () => {
           <Text style={styles.distance}>Distance: 3km</Text>
         </View>
 
-        {/* Action Buttons */}
+        {/* Buttons: Check In / Directions */}
         <View style={styles.actions}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.actionButton, styles.checkInButton]}
-            onPress={() => router.push("/checkIn")}>
+            onPress={() => console.log("Check In initiated")}
+          >
             <Text style={styles.actionButtonText}>Check In</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.actionButton}>
@@ -48,50 +49,45 @@ const ChargingLocation = () => {
           </TouchableOpacity>
         </View>
 
-        {/* Tabs */}
+        {/* Tabs: Overview | Reviews (No Check In tab) */}
         <View style={styles.tabs}>
-          <TouchableOpacity>
-            <Text style={[styles.tab, styles.activeTab]}>Overview</Text>
+          <TouchableOpacity onPress={() => router.push("/location/chargingLocation")}>
+            <Text style={styles.tab}>Overview</Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => router.push("/addReview")}>
+          <TouchableOpacity onPress={() => router.push("/location/addReview")}>
             <Text style={styles.tab}>Reviews</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Detail Info */}
+        {/* Check-In Details */}
         <View style={styles.details}>
           <Text style={styles.detailText}>
-            <Text style={styles.detailLabel}>Operator:</Text> Tesla
+            <Text style={styles.detailLabel}>Vehicle Type:</Text> Tesla Model S
           </Text>
           <Text style={styles.detailText}>
-            <Text style={styles.detailLabel}>Address:</Text> 123 Belmont Road QLD 4153
+            <Text style={styles.detailLabel}>Charger Type:</Text> Type 1 @ 350kWh
           </Text>
           <Text style={styles.detailText}>
-            <Text style={styles.detailLabel}>Rates:</Text> $0.64 AUD per kWh
+            <Text style={styles.detailLabel}>Total Charging Stations:</Text> 48x Type 1 @ 350kWh
           </Text>
           <Text style={styles.detailText}>
-            <Text style={styles.detailLabel}>Total Charging Stations:</Text> 48x Type 1 @ 350kWh Chargers
-          </Text>
-          <Text style={styles.detailText}>
-            <Text style={styles.detailLabel}>Charging Stations Available:</Text> 15x Type 1 Chargers
+            <Text style={styles.detailLabel}>Charging Station Available:</Text> Yes (Charger No. 10)
           </Text>
         </View>
 
-        {/* Optional image */}
-        <Image
-          source={{ uri: "https://via.placeholder.com/400x200" }}
-          style={styles.additionalImage}
-        />
+        {/* Final Check In Button */}
+        <TouchableOpacity style={styles.checkInConfirmButton}>
+          <Text style={styles.checkInConfirmButtonText}>
+            ✅ Check In to Charger No. 10
+          </Text>
+        </TouchableOpacity>
       </ScrollView>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#fff",
-  },
+  container: { flex: 1, backgroundColor: "#fff" },
   image: {
     width: "100%",
     height: 200,
@@ -185,7 +181,7 @@ const styles = StyleSheet.create({
     borderBottomColor: "#007BFF",
   },
   details: {
-    marginBottom: 15,
+    marginBottom: 20,
   },
   detailText: {
     fontSize: 14,
@@ -195,12 +191,17 @@ const styles = StyleSheet.create({
   detailLabel: {
     fontWeight: "bold",
   },
-  additionalImage: {
-    width: "100%",
-    height: 200,
-    resizeMode: "cover",
-    marginTop: 15,
+  checkInConfirmButton: {
+    backgroundColor: "#28a745",
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  checkInConfirmButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 16,
   },
 });
 
-export default ChargingLocation;
+export default CheckIn;

@@ -31,7 +31,7 @@ const LoginScreen = () => {
       {/* Logo Banner */}
       <View style={styles.bannerContainer}>
         <Image
-          source={require("../assets/chargeTrackerLogo.png")}
+          source={require("../assets//images/chargeTrackerLogo.png")}
           style={styles.bannerImage}
         />
       </View>

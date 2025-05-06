@@ -66,7 +66,7 @@ const LoginScreen = () => {
       {/* CHARGING LOCATION BUTTON */}
       <TouchableOpacity
         style={[styles.signInButton, { backgroundColor: "#6c757d" }]}
-        onPress={() => router.push("/chargingLocation")}
+        onPress={() => router.push("/location/[locationId]")}
       >
         <Text style={styles.signInButtonText}>
           Screen 6 - Charging Location
@@ -77,7 +77,7 @@ const LoginScreen = () => {
       {/* CheckIn BUTTON */}
       <TouchableOpacity
         style={[styles.signInButton, { backgroundColor: "#6c757d" }]}
-        onPress={() => router.push("/checkIn")}
+        onPress={() => router.push("/location/checkIn")}
       >
         <Text style={styles.signInButtonText}>Screen 7 - Check-In</Text>
       </TouchableOpacity>
@@ -86,7 +86,7 @@ const LoginScreen = () => {
       {/* ADD REVIEW BUTTON */}
       <TouchableOpacity
         style={[styles.signInButton, { backgroundColor: "#6c757d" }]}
-        onPress={() => router.push("/addReview")}
+        onPress={() => router.push("/location/addReview")}
       >
         <Text style={styles.signInButtonText}>Screen 8 - Add Review</Text>
       </TouchableOpacity>
@@ -95,7 +95,7 @@ const LoginScreen = () => {
       {/* POST REVIEW BUTTON */}
       <TouchableOpacity
         style={[styles.signInButton, { backgroundColor: "#6c757d" }]}
-        onPress={() => router.push("/postReview")}
+        onPress={() => router.push("/location/postReview")}
       >
         <Text style={styles.signInButtonText}>
           Screen 9 - Posting Review (Page 1 & 2)

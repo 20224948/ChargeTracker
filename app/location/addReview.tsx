@@ -45,7 +45,7 @@ const AddReview = () => {
         <View style={styles.actions}>
           <TouchableOpacity 
             style={[styles.actionButton, styles.checkInButton]}
-            onPress={() => router.push("/checkIn")}>
+            onPress={() => router.push("/location/checkIn")}>
             <Text style={styles.actionButtonText}>Check In</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.actionButton}>
@@ -55,7 +55,7 @@ const AddReview = () => {
 
         {/* Tabs Section */}
         <View style={styles.tabs}>
-          <TouchableOpacity onPress={() => router.push("/chargingLocation")}>
+          <TouchableOpacity onPress={() => router.push("/location/[locationId]")}>
             <Text style={styles.tab}>Overview</Text>
           </TouchableOpacity>
           <TouchableOpacity>
@@ -70,7 +70,7 @@ const AddReview = () => {
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.actionButton, styles.checkInButton]}
-            onPress={() => router.push("/postReview")}
+            onPress={() => router.push("/location/postReview")}
           >
             <Text style={styles.actionButtonText}>Add Review</Text>
           </TouchableOpacity>

@@ -23,7 +23,7 @@ const About = () => {
         onPress={() => router.push("/home")}
       >
         <Image
-          source={require("../assets/chargeTrackerLogo.png")}
+          source={require("../assets/images/chargeTrackerLogo.png")}
           style={styles.bannerImage}
         />
       </TouchableOpacity>
