@@ -60,10 +60,16 @@ const ChargingLocation = () => {
 
   return (
     <View style={styles.container}>
-      <Image
-        source={{ uri: "https://via.placeholder.com/400x200" }}
-        style={styles.image}
-      />
+      <TouchableOpacity
+          style={styles.bannerContainer}
+          activeOpacity={0.8}
+          onPress={() => router.push("/home")}
+      >
+        <Image
+            source={require("../../assets/images/chargeTrackerLogo.png")}
+            style={styles.bannerImage}
+        />
+      </TouchableOpacity>
 
       <ScrollView style={styles.detailsContainer}>
         <View style={styles.header}>
@@ -134,6 +140,19 @@ const ChargingLocation = () => {
 };
 
 const styles = StyleSheet.create({
+  bannerContainer: {
+    width: "100%",
+    backgroundColor: "#0F81c7",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingTop: 60,
+    paddingBottom: 10,
+  },
+  bannerImage: {
+    width: "100%",
+    height: 180,
+    resizeMode: "contain",
+  },
   container: {
     flex: 1,
     backgroundColor: "#fff",
