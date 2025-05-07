@@ -151,10 +151,16 @@ const CheckIn = () => {
 
   return (
     <View style={styles.container}>
-      <Image
-        source={{ uri: "https://via.placeholder.com/400x200" }}
-        style={styles.image}
-      />
+          <TouchableOpacity
+              style={styles.bannerContainer}
+              activeOpacity={0.8}
+              onPress={() => router.push("/home")}
+          >
+            <Image
+                source={require("../../assets/images/chargeTrackerLogo.png")}
+                style={styles.bannerImage}
+            />
+          </TouchableOpacity>
 
       <ScrollView style={styles.detailsContainer}>
         <View style={styles.header}>
@@ -162,7 +168,7 @@ const CheckIn = () => {
           <View style={styles.ratingContainer}>
             <Text style={styles.rating}>{station.rating?.toFixed(1) || "N/A"}</Text>
             <Text style={styles.star}>⭐</Text>
-            <Text style={styles.reviews}>(309)</Text>
+            <Text style={styles.reviews}>(0)</Text>
           </View>
           <Text style={styles.status}>Open 24 Hours</Text>
         </View>
@@ -225,7 +231,23 @@ const CheckIn = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff" },
+  bannerContainer: {
+    width: "100%",
+    backgroundColor: "#0F81c7",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingTop: 60,
+    paddingBottom: 10,
+  },
+  bannerImage: {
+    width: "100%",
+    height: 180,
+    resizeMode: "contain",
+  },
+  container: { 
+    flex: 1, 
+    backgroundColor: "#fff" 
+  },
   image: {
     width: "100%",
     height: 200,

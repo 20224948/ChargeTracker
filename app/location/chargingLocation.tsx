@@ -119,9 +119,7 @@ const ChargingLocation = () => {
           <Text style={styles.detailText}>
             <Text style={styles.detailLabel}>Address:</Text> {station.location}
           </Text>
-          <Text style={styles.detailText}>
-            <Text style={styles.detailLabel}>Rates:</Text> $0.64 AUD per kWh
-          </Text>
+          
           <Text style={styles.detailText}>
             <Text style={styles.detailLabel}>Total Charging Stations:</Text> {station.totalDocks}
           </Text>

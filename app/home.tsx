@@ -24,7 +24,6 @@ interface ChargingStation {
   reviews: number;
   status: string;
   availability: string;
-  price: string;
   available: boolean;
   latitude: number;
   longitude: number;
@@ -61,7 +60,6 @@ const Home = () => {
             reviews: 100, // fallback
             status: "Open 24 Hours",
             availability: data.availableDocks > 0 ? "Chargers Available" : "Chargers Unavailable",
-            price: "$0.60 AUD per kWh",
             available: data.availableDocks > 0,
             latitude: data.coordinates.latitude,
             longitude: data.coordinates.longitude,
@@ -179,7 +177,7 @@ const Home = () => {
       >
         {item.availability}
       </Text>
-      <Text style={styles.stationPrice}>{item.price}</Text>
+
   
       <View style={styles.stationActions}>
         <TouchableOpacity
@@ -379,11 +377,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "bold",
     marginBottom: 5,
-  },
-  stationPrice: {
-    fontSize: 14,
-    color: "#555",
-    marginBottom: 10,
   },
   stationActions: {
     flexDirection: "row",
