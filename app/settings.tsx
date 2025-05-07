@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -8,55 +8,104 @@ import {
   Image,
   Modal,
   Alert,
-  Switch,
   ScrollView,
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { auth, db } from "../firebase";
+import {
+  onAuthStateChanged,
+  updatePassword,
+  signOut,
+} from "firebase/auth";
+import {
+  doc,
+  getDoc,
+  updateDoc,
+} from "firebase/firestore";
 
 const Settings = () => {
   const router = useRouter();
 
-  const [firstName, setFirstName] = useState("John");
-  const [lastName, setLastName] = useState("Doe");
-  const [email, setEmail] = useState("user@example.com");
-  const [vehicle, setVehicle] = useState("Tesla Model 3");
-  const [chargerType, setChargerType] = useState("Type 1");
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-
+  const [userId, setUserId] = useState<string | null>(null);
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [vehicle, setVehicle] = useState("");
+  const [chargerType, setChargerType] = useState("Type 2");
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
-  const handleSaveChanges = () => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      Alert.alert("Invalid Email", "Please enter a valid email address.");
-      return;
-    }
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        setUserId(user.uid);
+        setEmail(user.email || "");
 
-    Alert.alert("Saved", "Your changes have been saved.");
+        const docRef = doc(db, "users", user.uid);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          setFullName(data.fullName || "");
+          setVehicle(data.vehicleType || "");
+          setChargerType(data.chargerType || "Type 2");
+        }
+      } else {
+        router.replace("/login");
+      }
+    });
+
+    return unsubscribe;
+  }, []);
+
+  const handleSaveChanges = async () => {
+    if (!userId) return;
+
+    try {
+      await updateDoc(doc(db, "users", userId), {
+        fullName,
+        email,
+        vehicleType: vehicle,
+        chargerType,
+      });
+
+      Alert.alert("Saved", "Your profile has been updated.");
+    } catch (error) {
+      Alert.alert("Error", "Could not update profile.");
+    }
   };
 
-  const handlePasswordChange = () => {
+  const handlePasswordChange = async () => {
     if (newPassword !== confirmPassword) {
       Alert.alert("Error", "Passwords do not match.");
       return;
     }
-    Alert.alert("Password Updated", "Your password has been changed.");
-    setShowPasswordModal(false);
-    setNewPassword("");
-    setConfirmPassword("");
+
+    try {
+      if (auth.currentUser) {
+        await updatePassword(auth.currentUser, newPassword);
+        Alert.alert("Success", "Password updated successfully.");
+        setShowPasswordModal(false);
+        setNewPassword("");
+        setConfirmPassword("");
+      }
+    } catch (error: any) {
+      Alert.alert("Error", error.message || "Could not update password.");
+    }
+  };
+
+  const handleLogout = async () => {
+    await signOut(auth);
+    router.replace("/login");
   };
 
   return (
     <View style={styles.container}>
-      {/* Banner Logo */}
+      {/* Logo / Home */}
       <TouchableOpacity
         style={styles.bannerContainer}
-        activeOpacity={0.8}
-        onPress={() => router.push("/home")}
+        onPress={() => router.replace("/home")}
       >
         <Image
           source={require("../assets/images/chargeTrackerLogo.png")}
@@ -71,9 +120,9 @@ const Settings = () => {
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <Text style={styles.settingsHeader}>Settings</Text>
 
-          {/* NAVIGATION: Settings | About */}
+          {/* Tabs */}
           <View style={styles.tabs}>
-            <TouchableOpacity onPress={() => router.push("/settings")}>
+            <TouchableOpacity>
               <Text style={[styles.tab, styles.activeTab]}>Settings</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => router.push("/about")}>
@@ -84,20 +133,11 @@ const Settings = () => {
           {/* Form */}
           <View style={styles.form}>
             <View style={styles.row}>
-              <Text style={styles.label}>First Name:</Text>
+              <Text style={styles.label}>Full Name:</Text>
               <TextInput
                 style={styles.input}
-                value={firstName}
-                onChangeText={setFirstName}
-              />
-            </View>
-
-            <View style={styles.row}>
-              <Text style={styles.label}>Last Name:</Text>
-              <TextInput
-                style={styles.input}
-                value={lastName}
-                onChangeText={setLastName}
+                value={fullName}
+                onChangeText={setFullName}
               />
             </View>
 
@@ -106,8 +146,7 @@ const Settings = () => {
               <TextInput
                 style={styles.input}
                 value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
+                editable={false}
               />
             </View>
 
@@ -131,7 +170,7 @@ const Settings = () => {
               />
             </View>
 
-            <Text style={[styles.sectionLabel]}>Charger Type:</Text>
+            <Text style={styles.sectionLabel}>Charger Type:</Text>
             <View style={styles.radioContainer}>
               {["CCS", "CHAdeMO", "Type 2"].map((type) => (
                 <TouchableOpacity
@@ -150,18 +189,24 @@ const Settings = () => {
               ))}
             </View>
 
-            {/* Save Button */}
             <TouchableOpacity
               style={styles.saveButton}
               onPress={handleSaveChanges}
             >
               <Text style={styles.saveButtonText}>Save Changes</Text>
             </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.saveButton, { backgroundColor: "#dc3545", marginTop: 10 }]}
+              onPress={handleLogout}
+            >
+              <Text style={styles.saveButtonText}>Logout</Text>
+            </TouchableOpacity>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* Modal: Change Password */}
+      {/* Password Modal */}
       <Modal
         animationType="slide"
         transparent
@@ -192,9 +237,7 @@ const Settings = () => {
               <Text style={styles.saveButtonText}>Submit</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => setShowPasswordModal(false)}>
-              <Text
-                style={{ color: "red", marginTop: 10, textAlign: "center" }}
-              >
+              <Text style={{ color: "red", marginTop: 10, textAlign: "center" }}>
                 Cancel
               </Text>
             </TouchableOpacity>
