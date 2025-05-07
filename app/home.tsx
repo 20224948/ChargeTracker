@@ -12,8 +12,10 @@ import MapView, { Marker, Region } from "react-native-maps";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import * as Location from "expo-location";
+import { Platform, Linking, Pressable } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-
+import { collection, getDocs } from "firebase/firestore";
+import { db } from "../firebase";
 
 interface ChargingStation {
   id: string;
@@ -44,81 +46,85 @@ const Home = () => {
   const [currentLocation, setCurrentLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [address, setAddress] = useState<string>("");
 
-  const [chargingStations] = useState<ChargingStation[]>([
-    {
-      id: "1",
-      name: "Belmont EV Charging Station",
-      rating: 4.9,
-      reviews: 309,
-      status: "Open 24 Hours",
-      availability: "Chargers Available",
-      price: "$0.64 AUD per kWh",
-      available: true,
-      latitude: -27.4705,
-      longitude: 153.026,
-    },
-    {
-      id: "2",
-      name: "Carina EV Charging Station",
-      rating: 4.7,
-      reviews: 410,
-      status: "Open 24 Hours",
-      availability: "Chargers Unavailable",
-      price: "$0.62 AUD per kWh",
-      available: false,
-      latitude: -27.472,
-      longitude: 153.03,
-    },
-    {
-      id: "3",
-      name: "Morningside EV Charging Station",
-      rating: 4.5,
-      reviews: 511,
-      status: "Open 24 Hours",
-      availability: "Chargers Available",
-      price: "$0.68 AUD per kWh",
-      available: true,
-      latitude: -27.468,
-      longitude: 153.02,
-    },
-  ]);
+  const [chargingStations, setChargingStations] = useState<ChargingStation[]>([]);
 
   useEffect(() => {
-    (async () => {
+    const fetchStations = async () => {
       try {
-        const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== "granted") {
+        const snapshot = await getDocs(collection(db, "chargingStations"));
+        const stations: ChargingStation[] = snapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            name: data.stationName,
+            rating: data.rating || 0,
+            reviews: 100, // fallback
+            status: "Open 24 Hours",
+            availability: data.availableDocks > 0 ? "Chargers Available" : "Chargers Unavailable",
+            price: "$0.60 AUD per kWh",
+            available: data.availableDocks > 0,
+            latitude: data.coordinates.latitude,
+            longitude: data.coordinates.longitude,
+          };
+        });
+        setChargingStations(stations);
+      } catch (error) {
+        console.error("Error fetching stations:", error);
+        Alert.alert("Error", "Unable to load charging stations.");
+      }
+    };
+
+    fetchStations();
+  }, []);
+
+  useEffect(() => {
+    const getLocation = async () => {
+      try {
+        const { status, canAskAgain } = await Location.requestForegroundPermissionsAsync();
+  
+        if (status === "granted") {
+          const location = await Location.getCurrentPositionAsync({});
+          const { latitude, longitude } = location.coords;
+  
+          setRegion({
+            latitude,
+            longitude,
+            latitudeDelta: 0.05,
+            longitudeDelta: 0.05,
+          });
+          setCurrentLocation({ latitude, longitude });
+  
+          const [geo] = await Location.reverseGeocodeAsync({ latitude, longitude });
+          setAddress(
+            geo
+              ? `${geo.street || ""} ${geo.name || ""}, ${geo.city || ""}, ${geo.region || ""} ${geo.postalCode || ""}`
+              : "Unknown address"
+          );
+        } else if (!canAskAgain) {
+          Alert.alert(
+            "Location Blocked",
+            "Please enable location access in Settings to use this feature.",
+            [
+              { text: "Cancel", style: "cancel" },
+              { text: "Open Settings", onPress: () => Linking.openSettings() },
+            ]
+          );
+        } else {
           Alert.alert(
             "Permission Denied",
-            "Location permission is required to show nearby charging stations."
+            "We need location access to show nearby chargers."
           );
-          return;
         }
-
-        const location = await Location.getCurrentPositionAsync({});
-        const { latitude, longitude } = location.coords;
-
-        setRegion({
-          latitude,
-          longitude,
-          latitudeDelta: 0.05,
-          longitudeDelta: 0.05,
-        });
-
-        setCurrentLocation({ latitude, longitude });
-
-        const geo = await Location.reverseGeocodeAsync({ latitude, longitude });
-        const formatted = geo[0]
-          ? `${geo[0].street || ""} ${geo[0].name || ""}, ${geo[0].city || ""}, ${geo[0].region || ""} ${geo[0].postalCode || ""}`
-          : "Unknown address";
-
-        setAddress(formatted);
-      } catch (error) {
-        console.error("Error fetching location:", error);
-        Alert.alert("Error", "Unable to fetch location. Please try again.");
+      } catch (err) {
+        console.error("Location error:", err);
+        Alert.alert("Error", "Unable to get your location.");
       }
-    })();
+    };
+  
+    getLocation();
   }, []);
+  
+  
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;
@@ -154,7 +160,10 @@ const Home = () => {
   };
 
   const renderStation = ({ item }: { item: ChargingStation }) => (
-    <View style={styles.stationCard}>
+    <Pressable
+      onPress={() => router.push(`/location/${item.id}`)}
+      style={styles.stationCard}
+    >
       <View style={styles.stationHeader}>
         <Text style={styles.stationName}>{item.name}</Text>
         <Text style={styles.stationRating}>
@@ -171,23 +180,43 @@ const Home = () => {
         {item.availability}
       </Text>
       <Text style={styles.stationPrice}>{item.price}</Text>
+  
       <View style={styles.stationActions}>
         <TouchableOpacity
           style={[
             styles.actionButton,
             { backgroundColor: item.available ? "#28a745" : "#dc3545" },
           ]}
+          onPress={(e) => {
+            e.stopPropagation(); // Prevent triggering outer Pressable
+            router.push(`/location/checkIn?id=${item.id}`);
+          }}
         >
           <Text style={styles.actionButtonText}>
             {item.available ? "Check In" : "Unavailable"}
           </Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.actionButton}>
+  
+        <TouchableOpacity
+          style={styles.actionButton}
+          onPress={(e) => {
+            e.stopPropagation(); // Prevent triggering outer Pressable
+            const lat = item.latitude;
+            const lng = item.longitude;
+            const label = encodeURIComponent(item.name);
+            const url = Platform.select({
+              ios: `http://maps.apple.com/?daddr=${lat},${lng}&q=${label}`,
+              android: `geo:${lat},${lng}?q=${lat},${lng}(${label})`,
+            });
+            if (url) Linking.openURL(url);
+          }}
+        >
           <Text style={styles.actionButtonText}>Directions</Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </Pressable>
   );
+
 
   return (
     <SafeAreaView style={styles.container}>
@@ -216,17 +245,19 @@ const Home = () => {
         region={region}
         onRegionChangeComplete={(newRegion) => setRegion(newRegion)}
       >
-        {chargingStations.map((station) => (
-          <Marker
-            key={station.id}
-            coordinate={{
-              latitude: station.latitude,
-              longitude: station.longitude,
-            }}
-            title={station.name}
-            description={station.availability}
-          />
-        ))}
+        {chargingStations.map((station) =>
+          station.latitude != null && station.longitude != null ? (
+            <Marker
+              key={station.id}
+              coordinate={{
+                latitude: station.latitude,
+                longitude: station.longitude,
+              }}
+              title={station.name}
+              description={station.availability}
+            />
+          ) : null
+        )}
 
         {currentLocation && (
           <Marker

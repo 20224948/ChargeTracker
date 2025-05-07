@@ -55,7 +55,7 @@ const AddReview = () => {
 
         {/* Tabs Section */}
         <View style={styles.tabs}>
-          <TouchableOpacity onPress={() => router.push("/location/[locationId]")}>
+          <TouchableOpacity onPress={() => router.push("/location/chargingLocation")}>
             <Text style={styles.tab}>Overview</Text>
           </TouchableOpacity>
           <TouchableOpacity>

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -6,49 +6,97 @@ import {
   Image,
   ScrollView,
   TouchableOpacity,
+  ActivityIndicator,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { Platform, Linking } from "react-native";
+import { useRouter, useLocalSearchParams } from "expo-router";
+import { doc, onSnapshot } from "firebase/firestore";
+import { db } from "../../firebase";
+
+const openDirections = (latitude: number, longitude: number, name: string) => {
+  const label = encodeURIComponent(name);
+  const url = Platform.select({
+    ios: `http://maps.apple.com/?daddr=${latitude},${longitude}&q=${label}`,
+    android: `geo:${latitude},${longitude}?q=${latitude},${longitude}(${label})`,
+  });
+  if (url) Linking.openURL(url);
+};
 
 const ChargingLocation = () => {
   const router = useRouter();
+  const { id: locationId } = useLocalSearchParams();
+  const [station, setStation] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+
+  useEffect(() => {
+    if (!locationId) return;
+
+    const unsub = onSnapshot(doc(db, "chargingStations", locationId as string), (docSnap) => {
+      if (docSnap.exists()) {
+        setStation(docSnap.data());
+      } else {
+        console.warn("No such station:", locationId);
+      }
+      setLoading(false);
+    });
+
+    return () => unsub();
+  }, [locationId]);
+
+  if (loading) {
+    return <ActivityIndicator style={{ marginTop: 50 }} size="large" />;
+  }
+
+  if (!station) {
+    return (
+      <View style={styles.container}>
+        <Text style={{ marginTop: 50, textAlign: "center", color: "red" }}>
+          Station not found.
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
-      {/* Header Image */}
       <Image
         source={{ uri: "https://via.placeholder.com/400x200" }}
         style={styles.image}
       />
 
       <ScrollView style={styles.detailsContainer}>
-        {/* Station Header Info */}
         <View style={styles.header}>
-          <Text style={styles.stationName}>Belmont EV Charging Station</Text>
+          <Text style={styles.stationName}>{station.stationName}</Text>
           <View style={styles.ratingContainer}>
-            <Text style={styles.rating}>4.9</Text>
+            <Text style={styles.rating}>{station.rating?.toFixed(1)}</Text>
             <Text style={styles.star}>⭐</Text>
-            <Text style={styles.reviews}>(309)</Text>
+            <Text style={styles.reviews}>({station.reviewCount || 0})</Text>
           </View>
-          <Text style={styles.status}>Open 24 Hours</Text>
-          <Text style={styles.availability}>
-            ⚡ Chargers Available @ $0.64 AUD per kWh
+          <Text style={styles.status}>
+            {station.openNow ? "Open Now" : "Closed"}
           </Text>
-          <Text style={styles.distance}>Distance: 3km</Text>
+          <Text style={styles.availability}>
+            ⚡ {station.availableDocks} of {station.totalDocks} Docks Available
+          </Text>
+          <Text style={styles.distance}>Type: {station.chargerTypes?.join(", ")}</Text>
         </View>
 
-        {/* Action Buttons */}
         <View style={styles.actions}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.actionButton, styles.checkInButton]}
-            onPress={() => router.push("/location/checkIn")}>
+            onPress={() => router.push(`/location/checkIn?id=${locationId}`)}
+          >
             <Text style={styles.actionButtonText}>Check In</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.actionButton}>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => openDirections(station.coordinates.latitude, station.coordinates.longitude, station.stationName)}
+          >
             <Text style={styles.actionButtonText}>Directions</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Tabs */}
         <View style={styles.tabs}>
           <TouchableOpacity>
             <Text style={[styles.tab, styles.activeTab]}>Overview</Text>
@@ -58,26 +106,24 @@ const ChargingLocation = () => {
           </TouchableOpacity>
         </View>
 
-        {/* Detail Info */}
         <View style={styles.details}>
           <Text style={styles.detailText}>
             <Text style={styles.detailLabel}>Operator:</Text> Tesla
           </Text>
           <Text style={styles.detailText}>
-            <Text style={styles.detailLabel}>Address:</Text> 123 Belmont Road QLD 4153
+            <Text style={styles.detailLabel}>Address:</Text> {station.location}
           </Text>
           <Text style={styles.detailText}>
             <Text style={styles.detailLabel}>Rates:</Text> $0.64 AUD per kWh
           </Text>
           <Text style={styles.detailText}>
-            <Text style={styles.detailLabel}>Total Charging Stations:</Text> 48x Type 1 @ 350kWh Chargers
+            <Text style={styles.detailLabel}>Total Charging Stations:</Text> {station.totalDocks}
           </Text>
           <Text style={styles.detailText}>
-            <Text style={styles.detailLabel}>Charging Stations Available:</Text> 15x Type 1 Chargers
+            <Text style={styles.detailLabel}>Charging Stations Available:</Text> {station.availableDocks}
           </Text>
         </View>
 
-        {/* Optional image */}
         <Image
           source={{ uri: "https://via.placeholder.com/400x200" }}
           style={styles.additionalImage}

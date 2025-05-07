@@ -66,7 +66,7 @@ const LoginScreen = () => {
       {/* CHARGING LOCATION BUTTON */}
       <TouchableOpacity
         style={[styles.signInButton, { backgroundColor: "#6c757d" }]}
-        onPress={() => router.push("/location/[locationId]")}
+        onPress={() => router.push("/location/chargingLocation")}
       >
         <Text style={styles.signInButtonText}>
           Screen 6 - Charging Location

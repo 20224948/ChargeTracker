@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -6,52 +6,181 @@ import {
   Image,
   TouchableOpacity,
   ScrollView,
+  ActivityIndicator,
+  Alert,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { Platform, Linking } from "react-native";
+import { useRouter, useLocalSearchParams } from "expo-router";
+import { doc, getDoc, getDocs, collection, updateDoc } from "firebase/firestore";
+import { db } from "../../firebase";
+
+const openDirections = (latitude: number, longitude: number, name: string) => {
+  const label = encodeURIComponent(name);
+  const url = Platform.select({
+    ios: `http://maps.apple.com/?daddr=${latitude},${longitude}&q=${label}`,
+    android: `geo:${latitude},${longitude}?q=${latitude},${longitude}(${label})`,
+  });
+  if (url) Linking.openURL(url);
+};
+
+interface Dock {
+  id: string;
+  status: string;
+  chargerType: string;
+}
+
+interface Station {
+  stationName: string;
+  availableDocks: number;
+  totalDocks: number;
+  rating?: number;
+  location?: string;
+  chargerTypes?: string[];
+  openNow?: boolean;
+  coordinates: {
+    latitude: number;
+    longitude: number;
+  };
+}
 
 const CheckIn = () => {
   const router = useRouter();
+  const { id: locationId } = useLocalSearchParams();
+  const [station, setStation] = useState<Station | null>(null);
+  const [docks, setDocks] = useState<Dock[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [userCheckedInDockId, setUserCheckedInDockId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!locationId) return;
+
+    const fetchStationAndDocks = async () => {
+      try {
+        const stationDoc = await getDoc(doc(db, "chargingStations", locationId as string));
+        if (stationDoc.exists()) {
+          setStation(stationDoc.data() as Station);
+        }
+
+        const dockSnapshot = await getDocs(
+          collection(db, "chargingStations", locationId as string, "docks")
+        );
+        const dockList: Dock[] = dockSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...(doc.data() as Omit<Dock, "id">),
+        }));
+        setDocks(dockList);
+
+        // Check if user is already checked into a dock
+        const checkedInDock = dockList.find(d => d.status === "In Use"); // Simulate one dock per user
+        if (checkedInDock) {
+          setUserCheckedInDockId(checkedInDock.id);
+        }
+      } catch (error) {
+        console.error("Error fetching station/docks:", error);
+        Alert.alert("Error", "Failed to load check-in data.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStationAndDocks();
+  }, [locationId]);
+
+  const handleCheckIn = async (dockId: string) => {
+    if (userCheckedInDockId) {
+      Alert.alert(
+        "Already Checked In",
+        "You can only check into one dock at a time. Please check out first."
+      );
+      return;
+    }
+
+    const dockRef = doc(db, "chargingStations", locationId as string, "docks", dockId);
+    const dockSnap = await getDoc(dockRef);
+    const currentStatus = dockSnap.data()?.status;
+
+    if (currentStatus === "In Use") {
+      Alert.alert("Dock In Use", "This dock is already in use.");
+      return;
+    }
+
+    await updateDoc(dockRef, { status: "In Use" });
+
+    const stationRef = doc(db, "chargingStations", locationId as string);
+    await updateDoc(stationRef, {
+      availableDocks: (station?.availableDocks || 1) - 1,
+    });
+
+    setDocks(prev => prev.map(d => (d.id === dockId ? { ...d, status: "In Use" } : d)));
+    setStation(prev =>
+      prev ? { ...prev, availableDocks: prev.availableDocks - 1 } : prev
+    );
+    setUserCheckedInDockId(dockId);
+  };
+
+  const handleCheckOut = async (dockId: string) => {
+    const dockRef = doc(db, "chargingStations", locationId as string, "docks", dockId);
+
+    await updateDoc(dockRef, { status: "Available" });
+
+    const stationRef = doc(db, "chargingStations", locationId as string);
+    await updateDoc(stationRef, {
+      availableDocks: (station?.availableDocks || 0) + 1,
+    });
+
+    setDocks(prev => prev.map(d => (d.id === dockId ? { ...d, status: "Available" } : d)));
+    setStation(prev =>
+      prev ? { ...prev, availableDocks: prev.availableDocks + 1 } : prev
+    );
+    setUserCheckedInDockId(null);
+  };
+
+  if (loading) {
+    return <ActivityIndicator style={{ marginTop: 50 }} size="large" />;
+  }
+
+  if (!station) {
+    return (
+      <View style={styles.container}>
+        <Text style={{ textAlign: "center", marginTop: 50 }}>
+          Charging station not found.
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
-      {/* Station Header Image */}
       <Image
-        source={{ uri: "https://via.placeholder.com/400x200" }} // Replace with actual image later
+        source={{ uri: "https://via.placeholder.com/400x200" }}
         style={styles.image}
       />
 
       <ScrollView style={styles.detailsContainer}>
-        {/* Station Summary */}
         <View style={styles.header}>
-          <Text style={styles.stationName}>Belmont EV Charging Station</Text>
+          <Text style={styles.stationName}>{station.stationName}</Text>
           <View style={styles.ratingContainer}>
-            <Text style={styles.rating}>4.9</Text>
+            <Text style={styles.rating}>{station.rating?.toFixed(1) || "N/A"}</Text>
             <Text style={styles.star}>⭐</Text>
             <Text style={styles.reviews}>(309)</Text>
           </View>
           <Text style={styles.status}>Open 24 Hours</Text>
-          <Text style={styles.availability}>
-            ⚡ Chargers Available @ $0.64 AUD per kWh
-          </Text>
-          <Text style={styles.distance}>Distance: 3km</Text>
         </View>
 
-        {/* Buttons: Check In / Directions */}
         <View style={styles.actions}>
-          <TouchableOpacity
-            style={[styles.actionButton, styles.checkInButton]}
-            onPress={() => console.log("Check In initiated")}
-          >
+          <TouchableOpacity style={[styles.actionButton, styles.checkInButton]}>
             <Text style={styles.actionButtonText}>Check In</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.actionButton}>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => openDirections(station?.coordinates?.latitude, station?.coordinates?.longitude, station?.stationName || "Charging Station")}
+          >
             <Text style={styles.actionButtonText}>Directions</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Tabs: Overview | Reviews (No Check In tab) */}
         <View style={styles.tabs}>
-          <TouchableOpacity onPress={() => router.push("/location/chargingLocation")}>
+          <TouchableOpacity onPress={() => router.push(`/location/${locationId}`)}>
             <Text style={styles.tab}>Overview</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={() => router.push("/location/addReview")}>
@@ -59,28 +188,37 @@ const CheckIn = () => {
           </TouchableOpacity>
         </View>
 
-        {/* Check-In Details */}
-        <View style={styles.details}>
-          <Text style={styles.detailText}>
-            <Text style={styles.detailLabel}>Vehicle Type:</Text> Tesla Model S
-          </Text>
-          <Text style={styles.detailText}>
-            <Text style={styles.detailLabel}>Charger Type:</Text> Type 1 @ 350kWh
-          </Text>
-          <Text style={styles.detailText}>
-            <Text style={styles.detailLabel}>Total Charging Stations:</Text> 48x Type 1 @ 350kWh
-          </Text>
-          <Text style={styles.detailText}>
-            <Text style={styles.detailLabel}>Charging Station Available:</Text> Yes (Charger No. 10)
-          </Text>
-        </View>
-
-        {/* Final Check In Button */}
-        <TouchableOpacity style={styles.checkInConfirmButton}>
-          <Text style={styles.checkInConfirmButtonText}>
-            ✅ Check In to Charger No. 10
-          </Text>
-        </TouchableOpacity>
+        {docks.map((dock, index) => (
+          <TouchableOpacity
+            key={dock.id}
+            style={[
+              styles.checkInConfirmButton,
+              {
+                backgroundColor:
+                  dock.status === "Available"
+                    ? "#28a745"
+                    : userCheckedInDockId === dock.id
+                      ? "#ffc107"
+                      : "#dc3545",
+              },
+            ]}
+            onPress={() =>
+              dock.status === "Available"
+                ? handleCheckIn(dock.id)
+                : userCheckedInDockId === dock.id
+                  ? handleCheckOut(dock.id)
+                  : null
+            }
+          >
+            <Text style={styles.checkInConfirmButtonText}>
+              {dock.status === "Available"
+                ? `✅ Check Into Dock ${index + 1} (${dock.chargerType})`
+                : userCheckedInDockId === dock.id
+                  ? `🔓 Check Out of Dock ${index + 1}`
+                  : `❌ Dock ${index + 1} In Use`}
+            </Text>
+          </TouchableOpacity>
+        ))}
       </ScrollView>
     </View>
   );
@@ -180,22 +318,11 @@ const styles = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: "#007BFF",
   },
-  details: {
-    marginBottom: 20,
-  },
-  detailText: {
-    fontSize: 14,
-    color: "#333",
-    marginBottom: 5,
-  },
-  detailLabel: {
-    fontWeight: "bold",
-  },
   checkInConfirmButton: {
-    backgroundColor: "#28a745",
     paddingVertical: 12,
     borderRadius: 8,
     alignItems: "center",
+    marginBottom: 10,
   },
   checkInConfirmButtonText: {
     color: "#fff",
