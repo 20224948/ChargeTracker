@@ -8,6 +8,7 @@ import {
   Image,
   ScrollView,
 } from "react-native";
+import {router, useRouter} from "expo-router";
 
 const PostReview = () => {
   const [rating, setRating] = useState(0);
@@ -32,12 +33,19 @@ const PostReview = () => {
   };
 
   return (
-    <ScrollView style={styles.container}>
-      {/* Station Image */}
-      <Image
-        source={{ uri: "https://via.placeholder.com/400x200" }}
-        style={styles.image}
-      />
+
+      <ScrollView style={styles.container}>
+        {/* Top Banner Image */}
+        <TouchableOpacity
+            style={styles.bannerContainer}
+            activeOpacity={0.8}
+            onPress={() => router.push("/home")}
+        >
+          <Image
+              source={require("../../assets/images/chargeTrackerLogo.png")}
+              style={styles.bannerImage}
+          />
+        </TouchableOpacity>
 
       {/* Charging Station Info */}
       <View style={styles.header}>
@@ -177,6 +185,19 @@ const PostReview = () => {
 };
 
 const styles = StyleSheet.create({
+  bannerContainer: {
+    width: "100%",
+    backgroundColor: "#0F81c7",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingTop: 60,
+    paddingBottom: 10,
+  },
+  bannerImage: {
+    width: "100%",
+    height: 180,
+    resizeMode: "contain",
+  },
   container: { flex: 1, backgroundColor: "#fff" },
   image: { width: "100%", height: 200, resizeMode: "cover" },
   header: { padding: 15 },
