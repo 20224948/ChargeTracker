@@ -57,7 +57,7 @@ const Home = () => {
             id: doc.id,
             name: data.stationName,
             rating: data.rating || 0,
-            reviews: 100, // fallback
+            reviews: data.reviews || 0,
             status: "Open 24 Hours",
             availability: data.availableDocks > 0 ? "Chargers Available" : "Chargers Unavailable",
             available: data.availableDocks > 0,
@@ -167,6 +167,7 @@ const Home = () => {
         <Text style={styles.stationRating}>
           {item.rating} ⭐ ({item.reviews})
         </Text>
+        
       </View>
       <Text style={styles.stationStatus}>{item.status}</Text>
       <Text

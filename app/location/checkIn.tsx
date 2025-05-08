@@ -37,6 +37,7 @@ interface Station {
   location?: string;
   chargerTypes?: string[];
   openNow?: boolean;
+  reviews?: number;
   coordinates: {
     latitude: number;
     longitude: number;
@@ -168,7 +169,7 @@ const CheckIn = () => {
           <View style={styles.ratingContainer}>
             <Text style={styles.rating}>{station.rating?.toFixed(1) || "N/A"}</Text>
             <Text style={styles.star}>⭐</Text>
-            <Text style={styles.reviews}>(0)</Text>
+            <Text style={styles.reviews}>({station.reviews ?? 0})</Text>
           </View>
           <Text style={styles.status}>Open 24 Hours</Text>
         </View>
@@ -189,7 +190,7 @@ const CheckIn = () => {
           <TouchableOpacity onPress={() => router.push(`/location/${locationId}`)}>
             <Text style={styles.tab}>Overview</Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => router.push("/location/addReview")}>
+          <TouchableOpacity onPress={() => router.push(`/location/reviews?id=${locationId}`)}>
             <Text style={styles.tab}>Reviews</Text>
           </TouchableOpacity>
         </View>

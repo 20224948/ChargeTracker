@@ -77,7 +77,7 @@ const ChargingLocation = () => {
           <View style={styles.ratingContainer}>
             <Text style={styles.rating}>{station.rating?.toFixed(1)}</Text>
             <Text style={styles.star}>⭐</Text>
-            <Text style={styles.reviews}>({station.reviewCount || 0})</Text>
+            <Text style={styles.reviews}>({station.reviews ?? 0})</Text>
           </View>
           <Text style={styles.status}>
             {station.openNow ? "Open Now" : "Closed"}
@@ -107,7 +107,7 @@ const ChargingLocation = () => {
           <TouchableOpacity>
             <Text style={[styles.tab, styles.activeTab]}>Overview</Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => router.push("/location/addReview")}>
+          <TouchableOpacity onPress={() => router.push(`/location/reviews?id=${locationId}`)}>
             <Text style={styles.tab}>Reviews</Text>
           </TouchableOpacity>
         </View>

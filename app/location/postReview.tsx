@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -7,65 +7,143 @@ import {
   TouchableOpacity,
   Image,
   ScrollView,
+  Alert,
+  ActivityIndicator,
 } from "react-native";
-import {router, useRouter} from "expo-router";
+import { useLocalSearchParams, router } from "expo-router";
+import { auth, db } from "../../firebase";
+import {
+  addDoc,
+  collection,
+  doc,
+  getDoc,
+  serverTimestamp,
+  updateDoc,
+  increment,
+} from "firebase/firestore";
 
 const PostReview = () => {
+  const { id: stationId } = useLocalSearchParams();
+  const [station, setStation] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
-  const [chargeStatus, setChargeStatus] = useState<string | null>(null);
   const [selectedPlug, setSelectedPlug] = useState<string | null>(null);
   const [waitTime, setWaitTime] = useState<string | null>(null);
   const [reviewSubmitted, setReviewSubmitted] = useState(false);
 
-  const renderStars = () => {
-    return Array.from({ length: 5 }, (_, i) => i + 1).map((star) => (
+  useEffect(() => {
+    const fetchStation = async () => {
+      try {
+        const ref = doc(db, "chargingStations", stationId as string);
+        const snap = await getDoc(ref);
+        if (snap.exists()) {
+          setStation(snap.data());
+        }
+      } catch (err) {
+        console.error("Error fetching station:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (stationId) fetchStation();
+  }, [stationId]);
+
+  const renderStars = () =>
+    Array.from({ length: 5 }, (_, i) => i + 1).map((star) => (
       <TouchableOpacity key={star} onPress={() => setRating(star)}>
         <Text style={[styles.star, rating >= star && styles.selectedStar]}>★</Text>
       </TouchableOpacity>
     ));
+
+    const handlePostReview = async () => {
+      try {
+        const user = auth.currentUser;
+        if (!user) throw new Error("User not signed in");
+    
+        const userRef = doc(db, "users", user.uid);
+        const userSnap = await getDoc(userRef);
+        const userName = userSnap.data()?.fullName || "Anonymous";
+    
+        await addDoc(collection(db, "reviews"), {
+          stationId,
+          rating,
+          text: comment,
+          userId: user.uid,
+          userName,
+          timestamp: serverTimestamp(),
+          chargerTypeUsed: selectedPlug,
+          waitTime,
+        });
+    
+        const stationRef = doc(db, "chargingStations", stationId as string);
+        const stationSnap = await getDoc(stationRef);
+        const prevRating = stationSnap.data()?.rating || 0;
+        const prevCount = stationSnap.data()?.reviews || 0;
+    
+        const newCount = prevCount + 1;
+        const newAvg = ((prevRating * prevCount) + rating) / newCount;
+    
+        await updateDoc(stationRef, {
+          rating: parseFloat(newAvg.toFixed(2)),
+          reviews: increment(1),
+        });
+    
+        Alert.alert("Review Posted", "Thank you for your feedback!", [
+          {
+            text: "OK",
+            onPress: () => router.replace(`/location/reviews?id=${stationId}`),
+          },
+        ]);
+      } catch (err: any) {
+        Alert.alert("Error", err.message);
+        console.error(err.message);
+      }
+    };
+
+  const handleCancel = () => {
+    router.replace(`/location/reviews?id=${stationId}`);
   };
 
-  const handlePostReview = () => {
-    console.log("Review Submitted");
-    console.log({ rating, comment, chargeStatus, selectedPlug, waitTime });
-    setReviewSubmitted(true);
-  };
+  if (loading) {
+    return <ActivityIndicator style={{ marginTop: 50 }} size="large" />;
+  }
 
   return (
+    <ScrollView style={styles.container}>
+      {/* Top Banner */}
+      <TouchableOpacity
+        style={styles.bannerContainer}
+        activeOpacity={0.8}
+        onPress={() => router.push("/home")}
+      >
+        <Image
+          source={require("../../assets/images/chargeTrackerLogo.png")}
+          style={styles.bannerImage}
+        />
+      </TouchableOpacity>
 
-      <ScrollView style={styles.container}>
-        {/* Top Banner Image */}
-        <TouchableOpacity
-            style={styles.bannerContainer}
-            activeOpacity={0.8}
-            onPress={() => router.push("/home")}
-        >
-          <Image
-              source={require("../../assets/images/chargeTrackerLogo.png")}
-              style={styles.bannerImage}
-          />
-        </TouchableOpacity>
-
-      {/* Charging Station Info */}
+      {/* Station Info */}
       <View style={styles.header}>
-        <Text style={styles.stationName}>Belmont EV Charging Station</Text>
+        <Text style={styles.stationName}>{station?.stationName || "Station"}</Text>
         <View style={styles.ratingRow}>
-          <Text style={styles.rating}>4.9</Text>
+          <Text style={styles.rating}>{station?.rating?.toFixed(1) || "N/A"}</Text>
           <Text style={styles.starText}>⭐</Text>
-          <Text style={styles.reviewCount}>(309)</Text>
+          <Text style={styles.reviewCount}>({station?.reviews ?? 0})</Text>
         </View>
-        <Text style={styles.status}>Open 24 Hours</Text>
+        <Text style={styles.status}>{station?.openNow ? "Open 24 Hours" : "Closed"}</Text>
         <Text style={styles.availability}>
-          ⚡ Chargers Available @ $0.64 AUD per kWh
+          ⚡ {station?.price || "Chargers Available"}
         </Text>
-        <Text style={styles.distance}>Distance: 3km</Text>
+        {station?.distance && <Text style={styles.distance}>Distance: {station.distance}</Text>}
       </View>
 
-      {/* Rating Stars */}
+      {/* Rating */}
       <View style={styles.starContainer}>{renderStars()}</View>
 
-      {/* Comment Box */}
+      {/* Review Input */}
       <TextInput
         style={styles.commentInput}
         placeholder="Choose a star rating first, then add a review."
@@ -75,107 +153,62 @@ const PostReview = () => {
         onChangeText={setComment}
       />
 
-      {/* Charge Status */}
-      <Text style={styles.sectionLabel}>Did you charge successfully?</Text>
-      <View style={styles.chargeOptions}>
-        <TouchableOpacity
-          style={[
-            styles.chargeButton,
-            chargeStatus === "success" && styles.chargeSelected,
-          ]}
-          onPress={() => setChargeStatus("success")}
-        >
-          <Text
+      {/* Plug Type */}
+      <Text style={styles.sectionLabel}>Which plug did you use?</Text>
+      <View style={styles.plugContainer}>
+        {["CCS", "CHAdeMO", "Type 2"].map((plug) => (
+          <TouchableOpacity
+            key={plug}
             style={[
-              styles.chargeButtonText,
-              chargeStatus === "success" && styles.chargeTextSelected,
+              styles.plugButton,
+              selectedPlug === plug && styles.plugSelected,
             ]}
+            onPress={() => setSelectedPlug(plug)}
           >
-            Successful Charge
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[
-            styles.chargeButton,
-            chargeStatus === "fail" && styles.chargeSelected,
-          ]}
-          onPress={() => setChargeStatus("fail")}
-        >
-          <Text
-            style={[
-              styles.chargeButtonText,
-              chargeStatus === "fail" && styles.chargeTextSelected,
-            ]}
-          >
-            Unable to Charge
-          </Text>
-        </TouchableOpacity>
+            <Text
+              style={[
+                styles.plugButtonText,
+                selectedPlug === plug && styles.plugTextSelected,
+              ]}
+            >
+              {plug}
+            </Text>
+          </TouchableOpacity>
+        ))}
       </View>
 
-      {/* Plug Type */}
-      {chargeStatus && (
-        <>
-          <Text style={styles.sectionLabel}>Which plug did you use?</Text>
-          <View style={styles.plugContainer}>
-            {["Type 1", "Type 2", "Type 3", "Type 4"].map((plug) => (
-              <TouchableOpacity
-                key={plug}
-                style={[
-                  styles.plugButton,
-                  selectedPlug === plug && styles.plugSelected,
-                ]}
-                onPress={() => setSelectedPlug(plug)}
-              >
-                <Text
-                  style={[
-                    styles.plugButtonText,
-                    selectedPlug === plug && styles.plugTextSelected,
-                  ]}
-                >
-                  {plug}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </>
-      )}
-
-      {/* Wait Time + Post Button */}
-      {selectedPlug && (
-        <>
-          <Text style={styles.sectionLabel}>
-            How long did you wait for a charger to become available?
-          </Text>
-          <View style={styles.waitTimeContainer}>
-            {["No Wait", "Up to 10 min", "10-20 min", "20+ min"].map((time) => (
-              <TouchableOpacity
-                key={time}
-                style={[
-                  styles.waitTimeButton,
-                  waitTime === time && styles.waitTimeSelected,
-                ]}
-                onPress={() => setWaitTime(time)}
-              >
-                <Text
-                  style={[
-                    styles.waitTimeText,
-                    waitTime === time && styles.waitTimeTextSelected,
-                  ]}
-                >
-                  {time}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
+      {/* Wait Time */}
+      <Text style={styles.sectionLabel}>How long did you wait?</Text>
+      <View style={styles.waitTimeContainer}>
+        {["No Wait", "1-10 min", "10-20 min", "20+ min"].map((time) => (
           <TouchableOpacity
-            style={styles.postReviewButton}
-            onPress={handlePostReview}
+            key={time}
+            style={[
+              styles.waitTimeButton,
+              waitTime === time && styles.waitTimeSelected,
+            ]}
+            onPress={() => setWaitTime(time)}
           >
-            <Text style={styles.postReviewButtonText}>Post Review</Text>
+            <Text
+              style={[
+                styles.waitTimeText,
+                waitTime === time && styles.waitTimeTextSelected,
+              ]}
+            >
+              {time}
+            </Text>
           </TouchableOpacity>
-        </>
-      )}
+        ))}
+      </View>
+
+      {/* Submit & Cancel Buttons */}
+      <TouchableOpacity style={styles.postReviewButton} onPress={handlePostReview}>
+        <Text style={styles.postReviewButtonText}>Post Review</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
+        <Text style={styles.cancelButtonText}>Cancel</Text>
+      </TouchableOpacity>
 
       {reviewSubmitted && (
         <Text style={styles.thankYou}>Thank you for your review!</Text>
@@ -185,6 +218,7 @@ const PostReview = () => {
 };
 
 const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: "#fff" },
   bannerContainer: {
     width: "100%",
     backgroundColor: "#0F81c7",
@@ -198,22 +232,38 @@ const styles = StyleSheet.create({
     height: 180,
     resizeMode: "contain",
   },
-  container: { flex: 1, backgroundColor: "#fff" },
-  image: { width: "100%", height: 200, resizeMode: "cover" },
   header: { padding: 15 },
-  stationName: { fontSize: 20, fontWeight: "bold", color: "#333", marginBottom: 5 },
+  stationName: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 5,
+  },
   ratingRow: { flexDirection: "row", alignItems: "center", marginBottom: 5 },
   rating: { fontSize: 16, fontWeight: "bold", color: "#333" },
   starText: { fontSize: 16, color: "#FFD700", marginHorizontal: 5 },
   reviewCount: { fontSize: 14, color: "#555" },
   status: { fontSize: 14, color: "#007BFF", marginBottom: 5 },
-  availability: { fontSize: 14, fontWeight: "bold", color: "green", marginBottom: 5 },
+  availability: {
+    fontSize: 14,
+    fontWeight: "bold",
+    color: "green",
+    marginBottom: 5,
+  },
   distance: { fontSize: 14, color: "#555", marginBottom: 15 },
-
-  starContainer: { flexDirection: "row", justifyContent: "center", marginVertical: 10 },
-  star: { fontSize: 36, color: "#ccc", marginHorizontal: 5 },
-  selectedStar: { color: "#f1c40f" },
-
+  starContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    marginVertical: 10,
+  },
+  star: {
+    fontSize: 36,
+    color: "#ccc",
+    marginHorizontal: 5,
+  },
+  selectedStar: {
+    color: "#f1c40f",
+  },
   commentInput: {
     height: 100,
     marginHorizontal: 15,
@@ -226,7 +276,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     marginBottom: 20,
   },
-
   sectionLabel: {
     paddingHorizontal: 15,
     fontSize: 14,
@@ -234,32 +283,6 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     color: "#333",
   },
-
-  chargeOptions: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    marginBottom: 20,
-  },
-  chargeButton: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    paddingVertical: 10,
-    paddingHorizontal: 15,
-    borderRadius: 8,
-    backgroundColor: "#f4f4f4",
-  },
-  chargeSelected: {
-    backgroundColor: "#007BFF",
-    borderColor: "#007BFF",
-  },
-  chargeButtonText: {
-    color: "#333",
-    fontWeight: "bold",
-  },
-  chargeTextSelected: {
-    color: "#fff",
-  },
-
   plugContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -267,13 +290,15 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   plugButton: {
+    flexBasis: "30%",
+    alignItems: "center",
+    justifyContent: "center",
+    margin: 5,
     borderWidth: 1,
     borderColor: "#ccc",
-    paddingVertical: 10,
-    paddingHorizontal: 15,
     borderRadius: 8,
+    paddingVertical: 10,
     backgroundColor: "#f4f4f4",
-    marginBottom: 10,
   },
   plugSelected: {
     backgroundColor: "#007BFF",
@@ -286,7 +311,6 @@ const styles = StyleSheet.create({
   plugTextSelected: {
     color: "#fff",
   },
-
   waitTimeContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -295,12 +319,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
   },
   waitTimeButton: {
+    flexBasis: "45%",
+    alignItems: "center",
+    justifyContent: "center",
+    margin: 5,
     borderWidth: 1,
     borderColor: "#ccc",
     borderRadius: 8,
     paddingVertical: 10,
-    paddingHorizontal: 12,
-    marginVertical: 5,
     backgroundColor: "#f4f4f4",
   },
   waitTimeSelected: {
@@ -314,21 +340,32 @@ const styles = StyleSheet.create({
   waitTimeTextSelected: {
     color: "#fff",
   },
-
   postReviewButton: {
     backgroundColor: "#28a745",
     paddingVertical: 15,
     marginHorizontal: 15,
     borderRadius: 8,
     alignItems: "center",
-    marginBottom: 30,
+    marginBottom: 10,
   },
   postReviewButtonText: {
     color: "#fff",
     fontWeight: "bold",
     fontSize: 16,
   },
-
+  cancelButton: {
+    backgroundColor: "#6c757d",
+    paddingVertical: 15,
+    marginHorizontal: 15,
+    borderRadius: 8,
+    alignItems: "center",
+    marginBottom: 30,
+  },
+  cancelButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
   thankYou: {
     textAlign: "center",
     color: "#28a745",

@@ -86,7 +86,7 @@ const LoginScreen = () => {
       {/* ADD REVIEW BUTTON */}
       <TouchableOpacity
         style={[styles.signInButton, { backgroundColor: "#6c757d" }]}
-        onPress={() => router.push("/location/addReview")}
+        onPress={() => router.push("/location/reviews")}
       >
         <Text style={styles.signInButtonText}>Screen 8 - Add Review</Text>
       </TouchableOpacity>
