@@ -58,50 +58,50 @@ const PostReview = () => {
       </TouchableOpacity>
     ));
 
-    const handlePostReview = async () => {
-      try {
-        const user = auth.currentUser;
-        if (!user) throw new Error("User not signed in");
-    
-        const userRef = doc(db, "users", user.uid);
-        const userSnap = await getDoc(userRef);
-        const userName = userSnap.data()?.fullName || "Anonymous";
-    
-        await addDoc(collection(db, "reviews"), {
-          stationId,
-          rating,
-          text: comment,
-          userId: user.uid,
-          userName,
-          timestamp: serverTimestamp(),
-          chargerTypeUsed: selectedPlug,
-          waitTime,
-        });
-    
-        const stationRef = doc(db, "chargingStations", stationId as string);
-        const stationSnap = await getDoc(stationRef);
-        const prevRating = stationSnap.data()?.rating || 0;
-        const prevCount = stationSnap.data()?.reviews || 0;
-    
-        const newCount = prevCount + 1;
-        const newAvg = ((prevRating * prevCount) + rating) / newCount;
-    
-        await updateDoc(stationRef, {
-          rating: parseFloat(newAvg.toFixed(2)),
-          reviews: increment(1),
-        });
-    
-        Alert.alert("Review Posted", "Thank you for your feedback!", [
-          {
-            text: "OK",
-            onPress: () => router.replace(`/location/reviews?id=${stationId}`),
-          },
-        ]);
-      } catch (err: any) {
-        Alert.alert("Error", err.message);
-        console.error(err.message);
-      }
-    };
+  const handlePostReview = async () => {
+    try {
+      const user = auth.currentUser;
+      if (!user) throw new Error("User not signed in");
+
+      const userRef = doc(db, "users", user.uid);
+      const userSnap = await getDoc(userRef);
+      const userName = userSnap.data()?.fullName || "Anonymous";
+
+      await addDoc(collection(db, "reviews"), {
+        stationId,
+        rating,
+        text: comment,
+        userId: user.uid,
+        userName,
+        timestamp: serverTimestamp(),
+        chargerTypeUsed: selectedPlug,
+        waitTime,
+      });
+
+      const stationRef = doc(db, "chargingStations", stationId as string);
+      const stationSnap = await getDoc(stationRef);
+      const prevRating = stationSnap.data()?.rating || 0;
+      const prevCount = stationSnap.data()?.reviews || 0;
+
+      const newCount = prevCount + 1;
+      const newAvg = ((prevRating * prevCount) + rating) / newCount;
+
+      await updateDoc(stationRef, {
+        rating: parseFloat(newAvg.toFixed(2)),
+        reviews: increment(1),
+      });
+
+      Alert.alert("Review Posted", "Thank you for your feedback!", [
+        {
+          text: "OK",
+          onPress: () => router.replace(`/location/reviews?id=${stationId}`),
+        },
+      ]);
+    } catch (err: any) {
+      Alert.alert("Error", err.message);
+      console.error(err.message);
+    }
+  };
 
   const handleCancel = () => {
     router.replace(`/location/reviews?id=${stationId}`);
@@ -133,11 +133,10 @@ const PostReview = () => {
           <Text style={styles.starText}>⭐</Text>
           <Text style={styles.reviewCount}>({station?.reviews ?? 0})</Text>
         </View>
-        <Text style={styles.status}>{station?.openNow ? "Open 24 Hours" : "Closed"}</Text>
         <Text style={styles.availability}>
-          ⚡ {station?.price || "Chargers Available"}
+          ⚡ {station.availableDocks} of {station.totalDocks} Docks Available
         </Text>
-        {station?.distance && <Text style={styles.distance}>Distance: {station.distance}</Text>}
+        <Text style={styles.distance}>Type: {station.chargerTypes?.join(", ")}</Text>
       </View>
 
       {/* Rating */}
