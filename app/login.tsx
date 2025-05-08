@@ -20,8 +20,9 @@ import {
   signInWithCredential,
   GoogleAuthProvider,
 } from "firebase/auth";
-import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
 import * as Google from "expo-auth-session/providers/google";
+
 
 const screenWidth = Dimensions.get("window").width;
 
@@ -70,11 +71,19 @@ const LoginScreen = () => {
 
   const handleLogin = async () => {
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      router.replace("/settings");
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+  
+      const userRef = doc(db, "users", user.uid);
+      const userSnap = await getDoc(userRef);
+  
+      if (userSnap.exists()) {
+        router.replace("/home");
+      } else {
+        router.replace("/settings");
+      }
     } catch (err: any) {
       Alert.alert("Login Error", err.message);
-      console.error(err.message);
     }
   };
 

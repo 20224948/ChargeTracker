@@ -61,7 +61,7 @@ const Settings = () => {
 
   const handleSaveChanges = async () => {
     if (!userId) return;
-
+  
     try {
       await updateDoc(doc(db, "users", userId), {
         fullName,
@@ -69,8 +69,13 @@ const Settings = () => {
         vehicleType: vehicle,
         chargerType,
       });
-
-      Alert.alert("Saved", "Your profile has been updated.");
+  
+      Alert.alert("Saved", "Your profile has been updated.", [
+        {
+          text: "OK",
+          onPress: () => router.replace("/home"),
+        },
+      ]);
     } catch (error) {
       Alert.alert("Error", "Could not update profile.");
     }

@@ -9,6 +9,9 @@ import {
   ActivityIndicator,
   Modal,
   Pressable,
+  Alert,
+  Platform,
+  Linking
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import {
@@ -30,6 +33,10 @@ interface Station {
   openNow?: boolean;
   distance?: string;
   reviews?: number;
+  coordinates: {
+    latitude: number;
+    longitude: number;
+  };
 }
 
 const ReviewsScreen = () => {
@@ -147,7 +154,24 @@ const ReviewsScreen = () => {
           >
             <Text style={styles.actionButtonText}>Check In</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.actionButton}>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => {
+              if (station?.coordinates?.latitude && station?.coordinates?.longitude) {
+                const lat = station.coordinates.latitude;
+                const lng = station.coordinates.longitude;
+                const label = encodeURIComponent(station.stationName);
+                const url = Platform.select({
+                  ios: `http://maps.apple.com/?daddr=${lat},${lng}&q=${label}`,
+                  android: `geo:${lat},${lng}?q=${lat},${lng}(${label})`,
+                });
+
+                if (url) Linking.openURL(url);
+              } else {
+                Alert.alert("Error", "Station coordinates not available.");
+              }
+            }}
+          >
             <Text style={styles.actionButtonText}>Directions</Text>
           </TouchableOpacity>
         </View>
