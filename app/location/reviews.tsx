@@ -28,10 +28,12 @@ import { formatDistanceToNow } from "date-fns";
 
 interface Station {
   stationName: string;
-  rating: number;
-  price?: string;
+  availableDocks: number;
+  totalDocks: number;
+  rating?: number;
+  location?: string;
+  chargerTypes?: string[];
   openNow?: boolean;
-  distance?: string;
   reviews?: number;
   coordinates: {
     latitude: number;
@@ -136,14 +138,12 @@ const ReviewsScreen = () => {
             <Text style={styles.reviews}>({station.reviews ?? 0})</Text>
           </View>
           <Text style={styles.status}>
-            {station.openNow ? "Open 24 Hours" : "Closed"}
+            {station.openNow ? "Open Now" : "Closed"}
           </Text>
           <Text style={styles.availability}>
-            ⚡ {station.price || "Chargers Available"}
+            ⚡ {station.availableDocks} of {station.totalDocks} Docks Available
           </Text>
-          {station.distance && (
-            <Text style={styles.distance}>Distance: {station.distance}</Text>
-          )}
+          <Text style={styles.distance}>Type: {station.chargerTypes?.join(", ")}</Text>
         </View>
 
         {/* Actions */}

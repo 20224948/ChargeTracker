@@ -58,7 +58,7 @@ const Home = () => {
             name: data.stationName,
             rating: data.rating || 0,
             reviews: data.reviews || 0,
-            status: "Open 24 Hours",
+            status: data.openNow !== false ? "Open Now" : "Closed",
             availability: data.availableDocks > 0 ? "Chargers Available" : "Chargers Unavailable",
             available: data.availableDocks > 0,
             latitude: data.coordinates.latitude,

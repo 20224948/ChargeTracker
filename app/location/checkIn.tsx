@@ -152,16 +152,16 @@ const CheckIn = () => {
 
   return (
     <View style={styles.container}>
-          <TouchableOpacity
-              style={styles.bannerContainer}
-              activeOpacity={0.8}
-              onPress={() => router.push("/home")}
-          >
-            <Image
-                source={require("../../assets/images/chargeTrackerLogo.png")}
-                style={styles.bannerImage}
-            />
-          </TouchableOpacity>
+      <TouchableOpacity
+        style={styles.bannerContainer}
+        activeOpacity={0.8}
+        onPress={() => router.push("/home")}
+      >
+        <Image
+          source={require("../../assets/images/chargeTrackerLogo.png")}
+          style={styles.bannerImage}
+        />
+      </TouchableOpacity>
 
       <ScrollView style={styles.detailsContainer}>
         <View style={styles.header}>
@@ -171,7 +171,13 @@ const CheckIn = () => {
             <Text style={styles.star}>⭐</Text>
             <Text style={styles.reviews}>({station.reviews ?? 0})</Text>
           </View>
-          <Text style={styles.status}>Open 24 Hours</Text>
+          <Text style={styles.status}>
+            {station.openNow !== false ? "Open Now" : "Closed"}
+          </Text>
+          <Text style={styles.availability}>
+                      ⚡ {station.availableDocks} of {station.totalDocks} Docks Available
+                    </Text>
+                    <Text style={styles.distance}>Type: {station.chargerTypes?.join(", ")}</Text>
         </View>
 
         <View style={styles.actions}>
@@ -245,9 +251,9 @@ const styles = StyleSheet.create({
     height: 180,
     resizeMode: "contain",
   },
-  container: { 
-    flex: 1, 
-    backgroundColor: "#fff" 
+  container: {
+    flex: 1,
+    backgroundColor: "#fff"
   },
   image: {
     width: "100%",
