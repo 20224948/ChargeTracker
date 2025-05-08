@@ -226,6 +226,13 @@ const ReviewsScreen = () => {
                 </View>
               </View>
               <Text style={styles.reviewText}>{review.text}</Text>
+              {review.chargerTypeUsed && (
+                <Text style={styles.metaText}>Charger Used: {review.chargerTypeUsed}</Text>
+              )}
+
+              {review.waitTime && (
+                <Text style={styles.metaText}>Wait Time: {review.waitTime}</Text>
+              )}
             </View>
           ))
         )}
@@ -429,6 +436,11 @@ const styles = StyleSheet.create({
     color: "#444",
     marginTop: 8,
     lineHeight: 20,
+  },
+  metaText: {
+    fontSize: 14,
+    color: "#666",
+    marginTop: 6,
   },
 });
 

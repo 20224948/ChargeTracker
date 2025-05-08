@@ -156,7 +156,7 @@ const PostReview = () => {
       {/* Plug Type */}
       <Text style={styles.sectionLabel}>Which plug did you use?</Text>
       <View style={styles.plugContainer}>
-        {["CCS", "CHAdeMO", "Type 2"].map((plug) => (
+        {station?.chargerTypes?.map((plug: string) => (
           <TouchableOpacity
             key={plug}
             style={[
