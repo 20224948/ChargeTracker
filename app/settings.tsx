@@ -12,6 +12,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
+import * as ImagePicker from "react-native-image-picker";
 import { useRouter } from "expo-router";
 import { auth, db } from "../firebase";
 import {
@@ -32,12 +33,14 @@ const Settings = () => {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [vehicle, setVehicle] = useState("");
+  const [profileImage, setProfileImage] = useState<string | null>(null);
   const [chargerType, setChargerType] = useState("Type 2");
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
   useEffect(() => {
+
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         setUserId(user.uid);
@@ -105,6 +108,39 @@ const Settings = () => {
     router.replace("/login");
   };
 
+  const handleSelectProfileImage = () => {
+    ImagePicker.launchImageLibrary(
+        { mediaType: "photo", quality: 1 },
+        (response) => {
+          if (response.didCancel) {
+            console.log("Image picker canceled");
+          } else if (response.errorCode) {
+            console.error("Image picker error:", response.errorMessage);
+          } else if (response.assets && response.assets.length > 0) {
+            const selectedImage = response.assets?.[0]?.uri ?? null;
+            setProfileImage(selectedImage);
+          }
+        }
+    );
+  };
+
+  const handleCaptureProfileImage = () => {
+    ImagePicker.launchCamera(
+        { mediaType: "photo", quality: 1 },
+        (response) => {
+          if (response.didCancel) {
+            console.log("Camera usage canceled");
+          } else if (response.errorCode) {
+            console.error("Camera error:", response.errorMessage);
+          } else if (response.assets && response.assets.length > 0) {
+            const capturedImage = response.assets?.[0]?.uri ?? null;
+            setProfileImage(capturedImage);
+          }
+        }
+    );
+  };
+
+
   return (
     <View style={styles.container}>
       {/* Logo / Home */}
@@ -132,6 +168,32 @@ const Settings = () => {
             </TouchableOpacity>
             <TouchableOpacity onPress={() => router.push("/about")}>
               <Text style={styles.tab}>About</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Profile Picture Section */}
+          <View style={styles.profileImageContainer}>
+            {profileImage ? (
+                <Image
+                    source={{ uri: profileImage }}
+                    style={styles.profileImage}
+                />
+            ) : (
+                <View style={styles.placeholderImage}>
+                  <Text style={styles.placeholderText}>No Image</Text>
+                </View>
+            )}
+            <TouchableOpacity
+                style={styles.uploadButton}
+                onPress={handleSelectProfileImage}
+            >
+              <Text style={styles.uploadButtonText}>Upload Picture</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+                style={styles.uploadButton}
+                onPress={handleCaptureProfileImage}
+            >
+              <Text style={styles.uploadButtonText}>Take Picture</Text>
             </TouchableOpacity>
           </View>
 
@@ -256,7 +318,41 @@ const Settings = () => {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#fff" },
   scrollContent: { paddingBottom: 40 },
-  bannerContainer: {
+
+  profileImageContainer: {
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  profileImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    marginBottom: 10,
+  },
+  placeholderImage: {
+    width: 100,
+    height: 100,
+    backgroundColor: "#ddd",
+    borderRadius: 50,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  placeholderText: {
+    color: "#888",
+  },
+  uploadButton: {
+    backgroundColor: "#007BFF",
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    borderRadius: 5,
+    marginBottom: 10,
+  },
+  uploadButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
+  },
+bannerContainer: {
     width: "100%",
     backgroundColor: "#0F81c7",
     alignItems: "center",
