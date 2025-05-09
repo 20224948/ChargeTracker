@@ -13,6 +13,7 @@ import {
   Platform,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
+import * as FileSystem from "expo-file-system";
 import { useRouter } from "expo-router";
 import { auth, db } from "../firebase";
 import {
@@ -25,6 +26,15 @@ import {
   getDoc,
   updateDoc,
 } from "firebase/firestore";
+import {
+  ref,
+  uploadBytes,
+  getDownloadURL
+} from 'firebase/storage';
+import {
+  storage
+} from '../firebase';
+
 
 const Settings = () => {
   const router = useRouter();
@@ -34,6 +44,7 @@ const Settings = () => {
   const [email, setEmail] = useState("");
   const [vehicle, setVehicle] = useState("");
   const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
   const [chargerType, setChargerType] = useState("Type 2");
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [newPassword, setNewPassword] = useState("");
@@ -108,8 +119,37 @@ const Settings = () => {
     router.replace("/login");
   };
 
-  const handleSelectProfileImage = async () => {
-    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+  const uploadImageAsync = async (imageUri: string): Promise<string | null> => {
+    try {
+      // Read file data as an array buffer
+      const fileData = await FileSystem.readAsStringAsync(imageUri, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+
+      // Convert Base64 string to Blob
+      const fileBlob = new Blob([fileData], {type: 'image/jpeg'});
+
+      // Create a Storage reference
+      const uniqueFileName = `profileImages/${Date.now()}.jpg`;
+      const storageRef = ref(storage, uniqueFileName);
+
+      // Upload blob to Firebase Storage
+      await uploadBytes(storageRef, fileBlob);
+
+      // Get the file's download URL from Firebase Storage
+      const downloadUrl = await getDownloadURL(storageRef);
+      console.log('Image uploaded successfully: ', downloadUrl);
+      console.log("Download URL: ", downloadUrl);
+      return downloadUrl;
+
+    } catch (error) {
+      console.error('Failed to upload image: ', JSON.stringify(error, null, 2));
+      return null;
+    }
+  };
+
+    const handleSelectProfileImage = async () => {
+    let permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
     if (!permissionResult.granted) {
       alert("Permission to access gallery is required!");
@@ -118,16 +158,24 @@ const Settings = () => {
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
       quality: 1,
     });
 
     if (!result.canceled) {
-      setProfileImage(result.assets[0].uri);
-    }
+      console.log('Image selected: ', result.assets[0].uri);
+
+      const downloadUrl = await uploadImageAsync(result.assets[0].uri);
+
+      if (downloadUrl) {
+        console.log('Image uploaded successfully: ', downloadUrl);
+        setProfileImage(downloadUrl); }
+
+      }
   };
 
   const handleCaptureProfileImage = async () => {
-    const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+    let permissionResult = await ImagePicker.requestCameraPermissionsAsync();
 
     if (!permissionResult.granted) {
       alert("Permission to access camera is required!");
@@ -136,18 +184,22 @@ const Settings = () => {
 
     const result = await ImagePicker.launchCameraAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
       quality: 1,
     });
 
     if (!result.canceled) {
-      setProfileImage(result.assets[0].uri);
+      console.log('Image captured: ', result.assets[0].uri);
+
+      const downloadUrl = await uploadImageAsync(result.assets[0].uri);
+
+      if (downloadUrl) {
+        console.log('Image uploaded successfully: ', downloadUrl);
+        setProfileImage(downloadUrl); // Update local state
+      }
+
     }
   };
-
-
-
-
-
 
 
   return (
@@ -184,7 +236,7 @@ const Settings = () => {
               <View style={styles.profileImageContainer}>
                 {profileImage ? (
                     <Image
-                        source={{uri: profileImage}}
+                        source={{uri: profileImage }}
                         style={styles.profileImage}
                     />
                 ) : (
@@ -337,6 +389,7 @@ const Settings = () => {
     profileImage: {
       width: 100,
       height: 100,
+      resizeMode: "cover",
       borderRadius: 50,
       marginBottom: 10,
     },
