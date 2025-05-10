@@ -127,16 +127,25 @@ const Settings = () => {
       });
 
       // Convert Base64 string to Blob
-      const fileBlob = new Blob([fileData], {type: 'image/jpeg'});
+      //const fileBlob = new Blob([fileData], {type: 'image/jpeg'});
+
+      const response = await fetch(imageUri);
+      const fileBlob = await response.blob();
+
+      console.log("File Blob: ", fileBlob);
 
       // Create a Storage reference
       const uniqueFileName = `profileImages/${Date.now()}.jpg`;
       const storageRef = ref(storage, uniqueFileName);
 
+      console.log("Uploading to path: ", uniqueFileName) // Log file path
+
       // Upload blob to Firebase Storage
       await uploadBytes(storageRef, fileBlob);
 
       // Get the file's download URL from Firebase Storage
+      console.log("Getting URL for path: ", storageRef.fullPath)
+
       const downloadUrl = await getDownloadURL(storageRef);
       console.log('Image uploaded successfully: ', downloadUrl);
       console.log("Download URL: ", downloadUrl);
@@ -159,18 +168,18 @@ const Settings = () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
+      aspect: [1, 1],
       quality: 1,
     });
 
     if (!result.canceled) {
+
       console.log('Image selected: ', result.assets[0].uri);
 
       const downloadUrl = await uploadImageAsync(result.assets[0].uri);
 
       if (downloadUrl) {
-        console.log('Image uploaded successfully: ', downloadUrl);
         setProfileImage(downloadUrl); }
-
       }
   };
 
