@@ -10,7 +10,7 @@ import {
   Alert,
 } from "react-native";
 import { Platform, Linking } from "react-native";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import {useRouter, useLocalSearchParams, router} from "expo-router";
 import { doc, getDoc, getDocs, collection, updateDoc } from "firebase/firestore";
 import { db } from "../../firebase";
 
@@ -153,13 +153,13 @@ const CheckIn = () => {
   return (
     <View style={styles.container}>
       <TouchableOpacity
-        style={styles.bannerContainer}
-        activeOpacity={0.8}
-        onPress={() => router.push("/home")}
+          style={styles.bannerContainer}
+          activeOpacity={0.8}
+          onPress={() => router.push("/home")}
       >
         <Image
-          source={require("../../assets/images/chargeTrackerLogo.png")}
-          style={styles.bannerImage}
+            source={require("../../assets/images/chargeTrackerLogo.png")}
+            style={styles.bannerImage}
         />
       </TouchableOpacity>
 
