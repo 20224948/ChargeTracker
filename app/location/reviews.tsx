@@ -79,11 +79,41 @@ const ReviewsScreen = () => {
         orderBy(orderField, direction)
       );
       const querySnap = await getDocs(q);
-      const reviews = querySnap.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setReviewList(reviews);
+      const reviewsWithPhotos = await Promise.all(
+          querySnap.docs.map(async (docSnap) => {
+            const reviewData = docSnap.data() as {
+              userId: string;
+              userName: string;
+              rating: number;
+              text: string;
+              timestamp?: { seconds: number };
+              chargerTypeUsed?: string;
+              waitTime?: string;
+            };
+
+            let profileImageUrl = null
+
+            try {
+              const userRef = doc(db, "users", reviewData.userId);
+              const userSnap = await getDoc(userRef);
+              if (userSnap.exists()) {
+                const userData = userSnap.data() as {
+                  profileImageUrl?: string;
+                };
+                profileImageUrl = userData.profileImageUrl || null;
+              }
+            } catch (error) {
+              console.warn("Error fetching user photo", error);
+            }
+
+            return {
+              id: docSnap.id,
+              ...reviewData,
+              profileImageUrl
+            };
+          })
+      );
+      setReviewList(reviewsWithPhotos);
     } catch (err) {
       console.error("Failed to load station or reviews:", err);
     } finally {
@@ -212,7 +242,8 @@ const ReviewsScreen = () => {
             <View key={review.id} style={styles.reviewContainer}>
               <View style={styles.reviewHeader}>
                 <Image
-                  source={{ uri: "https://img.icons8.com/color/96/user-male-circle--v1.png" }}
+                  source={{
+                    uri: review.profileImageUrl || "https://img.icons8.com/color/96/user-male-circle--v1.png" }}
                   style={styles.profilePicture}
                 />
                 <View>
