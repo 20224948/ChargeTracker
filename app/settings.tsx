@@ -13,7 +13,6 @@ import {
   Platform,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
-import * as FileSystem from "expo-file-system";
 import * as ImageManipulator from "expo-image-manipulator";
 import { useRouter } from "expo-router";
 import { auth, db, storage } from "../firebase";
@@ -47,7 +46,6 @@ const Settings = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
 
   useEffect(() => {
-
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         setUserId(user.uid);
@@ -59,6 +57,7 @@ const Settings = () => {
           setFullName(data.fullName || "");
           setVehicle(data.vehicleType || "");
           setChargerType(data.chargerType || "Type 2");
+          setProfileImage(data.profileImageUrl || null);
         }
       } else {
         router.replace("/login");
@@ -68,11 +67,8 @@ const Settings = () => {
     return unsubscribe;
   }, []);
 
-
-
   const handleSaveChanges = async () => {
     if (!userId) return;
-
     try {
       await updateDoc(doc(db, "users", userId), {
         fullName,
@@ -80,7 +76,6 @@ const Settings = () => {
         vehicleType: vehicle,
         chargerType,
       });
-
       Alert.alert("Saved", "Your profile has been updated.", [
         {
           text: "OK",
@@ -93,11 +88,8 @@ const Settings = () => {
   };
 
   const handlePasswordChange = async () => {
-    if (newPassword !== confirmPassword) {
-      Alert.alert("Error", "Passwords do not match.");
-      return;
-    }
-
+    if (newPassword !== confirmPassword)
+      return Alert.alert("Error", "Passwords do not match.");
     try {
       if (auth.currentUser) {
         await updatePassword(auth.currentUser, newPassword);
@@ -133,58 +125,60 @@ const Settings = () => {
       const response = await fetch(manipulated.uri);
       const fileBlob = await response.blob();
 
-      const uniqueFileName = `profileImages/${Date.now()}`;
-      const storageRef = ref(storage, uniqueFileName);
+      const filePath = `profileImages/${userId}/profile.jpg`;
+      console.log("Uploading to path: ", filePath);
 
-      console.log("Uploading to path: ", uniqueFileName) // Log file path
+      const storageRef = ref(storage, filePath);
+      const metadata = {contentType: 'image/jpeg',};
 
-      await uploadBytes(storageRef, fileBlob);
+      await uploadBytes(storageRef, fileBlob, metadata);
       const downloadUrl = await getDownloadURL(storageRef);
       console.log('Image uploaded successfully, download URL: ', downloadUrl);
       return downloadUrl;
-    } catch (error) {
-      console.error('Failed to upload image: ', JSON.stringify(error, null, 2));
+    } catch (error: any) {
+      console.error('Upload failed: ', error);
+      Alert.alert("Upload Error", error.message || "Upload failed.");
       return null;
     }
   };
 
     const handleSelectProfileImage = async () => {
-    let permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permissionResult.granted) {
-      alert("Permission to access gallery is required!");
-      return;
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permission.granted) {
+        alert("Permission to access gallery is required!");
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 1,
+      });
+      if (!result.canceled && userId) {
+        console.log('Uploading with userId: ', userId);
+        const downloadUrl = await uploadImageAsync(result.assets[0].uri);
+        if (downloadUrl) {
+          setProfileImage(downloadUrl);
+          await updateDoc(doc(db, "users", userId), {profileImageUrl: downloadUrl});
+          }
+        }
+  };
+
+  const handleCaptureProfileImage = async () => {
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permission.granted) return alert("Permission to access camera is required!");
+    const result = await ImagePicker.launchCameraAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [1, 1],
       quality: 1,
     });
-    if (!result.canceled) {
-      console.log('Image selected: ', result.assets[0].uri);
+    if (!result.canceled && userId) {
       const downloadUrl = await uploadImageAsync(result.assets[0].uri);
       if (downloadUrl) {
-        setProfileImage(downloadUrl); }
+        setProfileImage(downloadUrl);
+        await updateDoc(doc(db, "users", userId), {profileImageUrl: downloadUrl});
       }
-  };
-
-  const handleCaptureProfileImage = async () => {
-    let permissionResult = await ImagePicker.requestCameraPermissionsAsync();
-    if (!permissionResult.granted) {
-      alert("Permission to access camera is required!");
-      return;
-    }
-    const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      quality: 1,
-    });
-    if (!result.canceled) {
-      const downloadUrl = await uploadImageAsync(result.assets[0].uri);
-      if (downloadUrl) {
-        setProfileImage(downloadUrl); // Update local state
-      }
-
     }
   };
 
