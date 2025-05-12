@@ -8,7 +8,6 @@ import {
   StyleSheet,
   Modal,
   Image,
-  Dimensions,
   Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -23,28 +22,32 @@ import {
 import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
 import * as Google from "expo-auth-session/providers/google";
 
-
-const screenWidth = Dimensions.get("window").width;
-
 const LoginScreen = () => {
   const router = useRouter();
 
+  // Basic email/password login fields
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
+  // Modal toggles
   const [showForgotModal, setShowForgotModal] = useState(false);
   const [showSignupModal, setShowSignupModal] = useState(false);
+
+  // Forgot password email field
   const [resetEmail, setResetEmail] = useState("");
 
+  // Sign-up modal fields
   const [signupEmail, setSignupEmail] = useState("");
   const [signupPassword, setSignupPassword] = useState("");
   const [signupConfirm, setSignupConfirm] = useState("");
   const [signupName, setSignupName] = useState("");
 
+  // Google Auth request setup
   const [request, response, promptAsync] = Google.useAuthRequest({
-    clientId: "YOUR_EXPO_CLIENT_ID.apps.googleusercontent.com", // Replace with actual ID
+    clientId: "YOUR_EXPO_CLIENT_ID.apps.googleusercontent.com", // Replace with real client ID
   });
 
+  // Effect to handle successful Google Sign-In response
   useEffect(() => {
     const handleGoogleSignIn = async () => {
       if (response?.type === "success" && response.authentication?.idToken) {
@@ -52,16 +55,18 @@ const LoginScreen = () => {
         try {
           const result = await signInWithCredential(auth, credential);
           const user = result.user;
+
+          // Create or update user in Firestore
           await setDoc(doc(db, "users", user.uid), {
             uid: user.uid,
             fullName: user.displayName || "",
             email: user.email,
             createdAt: serverTimestamp(),
           }, { merge: true });
+
           router.replace("/settings");
         } catch (err: any) {
           Alert.alert("Google Sign-In Error", err.message);
-          console.error(err.message);
         }
       }
     };
@@ -69,24 +74,21 @@ const LoginScreen = () => {
     handleGoogleSignIn();
   }, [response]);
 
+  // Handles login with email/password
   const handleLogin = async () => {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
-  
-      const userRef = doc(db, "users", user.uid);
-      const userSnap = await getDoc(userRef);
-  
-      if (userSnap.exists()) {
-        router.replace("/home");
-      } else {
-        router.replace("/settings");
-      }
+
+      // Check if user profile exists in Firestore
+      const userSnap = await getDoc(doc(db, "users", user.uid));
+      router.replace(userSnap.exists() ? "/home" : "/settings");
     } catch (err: any) {
       Alert.alert("Login Error", err.message);
     }
   };
 
+  // Handles sign-up form submission
   const handleSignup = async () => {
     if (signupPassword !== signupConfirm) {
       Alert.alert("Error", "Passwords do not match.");
@@ -104,10 +106,10 @@ const LoginScreen = () => {
       router.replace("/settings");
     } catch (err: any) {
       Alert.alert("Signup Error", err.message);
-      console.error(err.message);
     }
   };
 
+  // Sends password reset email
   const handleForgotPassword = async () => {
     if (!resetEmail) {
       Alert.alert("Missing Email", "Please enter your email.");
@@ -120,12 +122,12 @@ const LoginScreen = () => {
       setShowForgotModal(false);
     } catch (err: any) {
       Alert.alert("Error", err.message);
-      console.error(err.message);
     }
   };
 
   return (
     <>
+      {/* Top banner/logo */}
       <View style={styles.bannerContainer}>
         <Image
           source={require("../assets/images/chargeTrackerLogo.png")}
@@ -134,11 +136,13 @@ const LoginScreen = () => {
       </View>
 
       <SafeAreaView style={styles.container}>
+        {/* App title */}
         <View style={styles.welcomeContainer}>
           <Text style={styles.welcomeLine}>Welcome to</Text>
           <Text style={styles.welcomeLine}>Charge Tracker</Text>
         </View>
 
+        {/* Login form */}
         <TextInput
           style={styles.input}
           placeholder="Email"
@@ -156,14 +160,17 @@ const LoginScreen = () => {
           onChangeText={setPassword}
         />
 
+        {/* Forgot password link */}
         <TouchableOpacity onPress={() => setShowForgotModal(true)}>
           <Text style={styles.forgotPassword}>Forgot Password?</Text>
         </TouchableOpacity>
 
+        {/* Sign-in button */}
         <TouchableOpacity style={styles.signInButton} onPress={handleLogin}>
           <Text style={styles.signInButtonText}>SIGN IN</Text>
         </TouchableOpacity>
 
+        {/* Sign-up link */}
         <Text style={styles.createAccountText}>
           Don’t have an account?{" "}
           <Text style={styles.createAccountLink} onPress={() => setShowSignupModal(true)}>
@@ -173,6 +180,7 @@ const LoginScreen = () => {
 
         <Text style={styles.orText}>Or</Text>
 
+        {/* Google login button */}
         <TouchableOpacity style={styles.googleButton} onPress={() => promptAsync()}>
           <Image
             source={{ uri: "https://img.icons8.com/color/48/000000/google-logo.png" }}
@@ -182,12 +190,7 @@ const LoginScreen = () => {
         </TouchableOpacity>
 
         {/* Forgot Password Modal */}
-        <Modal
-          visible={showForgotModal}
-          animationType="slide"
-          transparent
-          onRequestClose={() => setShowForgotModal(false)}
-        >
+        <Modal visible={showForgotModal} animationType="slide" transparent>
           <View style={styles.modalOverlay}>
             <View style={styles.modalContent}>
               <Text style={styles.modalTitle}>Reset Your Password</Text>
@@ -199,10 +202,7 @@ const LoginScreen = () => {
                 onChangeText={setResetEmail}
                 keyboardType="email-address"
               />
-              <TouchableOpacity
-                style={styles.sendLinkButton}
-                onPress={handleForgotPassword}
-              >
+              <TouchableOpacity style={styles.sendLinkButton} onPress={handleForgotPassword}>
                 <Text style={styles.sendLinkText}>Send Reset Link</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={() => setShowForgotModal(false)}>
@@ -212,13 +212,8 @@ const LoginScreen = () => {
           </View>
         </Modal>
 
-        {/* Sign Up Modal */}
-        <Modal
-          visible={showSignupModal}
-          animationType="slide"
-          transparent
-          onRequestClose={() => setShowSignupModal(false)}
-        >
+        {/* Sign-Up Modal */}
+        <Modal visible={showSignupModal} animationType="slide" transparent>
           <View style={styles.modalOverlay}>
             <View style={styles.modalContent}>
               <Text style={styles.modalTitle}>Create an Account</Text>
@@ -253,10 +248,7 @@ const LoginScreen = () => {
                 value={signupConfirm}
                 onChangeText={setSignupConfirm}
               />
-              <TouchableOpacity
-                style={styles.sendLinkButton}
-                onPress={handleSignup}
-              >
+              <TouchableOpacity style={styles.sendLinkButton} onPress={handleSignup}>
                 <Text style={styles.sendLinkText}>Sign Up</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={() => setShowSignupModal(false)}>
@@ -269,6 +261,7 @@ const LoginScreen = () => {
     </>
   );
 };
+
 
 const styles = StyleSheet.create({
   bannerContainer: {

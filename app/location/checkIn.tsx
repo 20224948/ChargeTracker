@@ -10,10 +10,11 @@ import {
   Alert,
 } from "react-native";
 import { Platform, Linking } from "react-native";
-import {useRouter, useLocalSearchParams, router} from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { doc, getDoc, getDocs, collection, updateDoc } from "firebase/firestore";
 import { db } from "../../firebase";
 
+// Utility function to open the native map app with directions
 const openDirections = (latitude: number, longitude: number, name: string) => {
   const label = encodeURIComponent(name);
   const url = Platform.select({
@@ -23,12 +24,14 @@ const openDirections = (latitude: number, longitude: number, name: string) => {
   if (url) Linking.openURL(url);
 };
 
+// Firestore document shape for Dock
 interface Dock {
   id: string;
   status: string;
   chargerType: string;
 }
 
+// Firestore document shape for Charging Station
 interface Station {
   stationName: string;
   availableDocks: number;
@@ -47,11 +50,13 @@ interface Station {
 const CheckIn = () => {
   const router = useRouter();
   const { id: locationId } = useLocalSearchParams();
+
   const [station, setStation] = useState<Station | null>(null);
   const [docks, setDocks] = useState<Dock[]>([]);
   const [loading, setLoading] = useState(true);
   const [userCheckedInDockId, setUserCheckedInDockId] = useState<string | null>(null);
 
+  // Load station + dock data and determine if user is already checked in
   useEffect(() => {
     if (!locationId) return;
 
@@ -71,8 +76,8 @@ const CheckIn = () => {
         }));
         setDocks(dockList);
 
-        // Check if user is already checked into a dock
-        const checkedInDock = dockList.find(d => d.status === "In Use"); // Simulate one dock per user
+        // Simulated logic: only one user per dock, mark first "In Use" as user's dock
+        const checkedInDock = dockList.find(d => d.status === "In Use");
         if (checkedInDock) {
           setUserCheckedInDockId(checkedInDock.id);
         }
@@ -87,6 +92,7 @@ const CheckIn = () => {
     fetchStationAndDocks();
   }, [locationId]);
 
+  // Handle dock check-in
   const handleCheckIn = async (dockId: string) => {
     if (userCheckedInDockId) {
       Alert.alert(
@@ -119,6 +125,7 @@ const CheckIn = () => {
     setUserCheckedInDockId(dockId);
   };
 
+  // Handle dock check-out
   const handleCheckOut = async (dockId: string) => {
     const dockRef = doc(db, "chargingStations", locationId as string, "docks", dockId);
 
@@ -136,10 +143,12 @@ const CheckIn = () => {
     setUserCheckedInDockId(null);
   };
 
+  // Show loading spinner
   if (loading) {
     return <ActivityIndicator style={{ marginTop: 50 }} size="large" />;
   }
 
+  // Fallback screen if station doesn't exist
   if (!station) {
     return (
       <View style={styles.container}>
@@ -152,18 +161,20 @@ const CheckIn = () => {
 
   return (
     <View style={styles.container}>
+      {/* Top logo banner */}
       <TouchableOpacity
-          style={styles.bannerContainer}
-          activeOpacity={0.8}
-          onPress={() => router.push("/home")}
+        style={styles.bannerContainer}
+        activeOpacity={0.8}
+        onPress={() => router.push("/home")}
       >
         <Image
-            source={require("../../assets/images/chargeTrackerLogo.png")}
-            style={styles.bannerImage}
+          source={require("../../assets/images/chargeTrackerLogo.png")}
+          style={styles.bannerImage}
         />
       </TouchableOpacity>
 
       <ScrollView style={styles.detailsContainer}>
+        {/* Station Overview Section */}
         <View style={styles.header}>
           <Text style={styles.stationName}>{station.stationName}</Text>
           <View style={styles.ratingContainer}>
@@ -171,27 +182,33 @@ const CheckIn = () => {
             <Text style={styles.star}>⭐</Text>
             <Text style={styles.reviews}>({station.reviews ?? 0})</Text>
           </View>
-          <Text style={styles.status}>
-            {station.openNow !== false ? "Open Now" : "Closed"}
-          </Text>
+          <Text style={styles.status}>{station.openNow !== false ? "Open Now" : "Closed"}</Text>
           <Text style={styles.availability}>
-                      ⚡ {station.availableDocks} of {station.totalDocks} Docks Available
-                    </Text>
-                    <Text style={styles.distance}>Type: {station.chargerTypes?.join(", ")}</Text>
+            ⚡ {station.availableDocks} of {station.totalDocks} Docks Available
+          </Text>
+          <Text style={styles.distance}>Type: {station.chargerTypes?.join(", ")}</Text>
         </View>
 
+        {/* Action buttons */}
         <View style={styles.actions}>
           <TouchableOpacity style={[styles.actionButton, styles.checkInButton]}>
             <Text style={styles.actionButtonText}>Check In</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.actionButton}
-            onPress={() => openDirections(station?.coordinates?.latitude, station?.coordinates?.longitude, station?.stationName || "Charging Station")}
+            onPress={() =>
+              openDirections(
+                station.coordinates.latitude,
+                station.coordinates.longitude,
+                station.stationName || "Charging Station"
+              )
+            }
           >
             <Text style={styles.actionButtonText}>Directions</Text>
           </TouchableOpacity>
         </View>
 
+        {/* Navigation Tabs */}
         <View style={styles.tabs}>
           <TouchableOpacity onPress={() => router.push(`/location/${locationId}`)}>
             <Text style={styles.tab}>Overview</Text>
@@ -201,6 +218,7 @@ const CheckIn = () => {
           </TouchableOpacity>
         </View>
 
+        {/* Dynamic Dock Buttons */}
         {docks.map((dock, index) => (
           <TouchableOpacity
             key={dock.id}
@@ -211,24 +229,24 @@ const CheckIn = () => {
                   dock.status === "Available"
                     ? "#28a745"
                     : userCheckedInDockId === dock.id
-                      ? "#ffc107"
-                      : "#dc3545",
+                    ? "#ffc107"
+                    : "#dc3545",
               },
             ]}
             onPress={() =>
               dock.status === "Available"
                 ? handleCheckIn(dock.id)
                 : userCheckedInDockId === dock.id
-                  ? handleCheckOut(dock.id)
-                  : null
+                ? handleCheckOut(dock.id)
+                : null
             }
           >
             <Text style={styles.checkInConfirmButtonText}>
               {dock.status === "Available"
                 ? `✅ Check Into Dock ${index + 1} (${dock.chargerType})`
                 : userCheckedInDockId === dock.id
-                  ? `🔓 Check Out of Dock ${index + 1}`
-                  : `❌ Dock ${index + 1} In Use`}
+                ? `🔓 Check Out of Dock ${index + 1}`
+                : `❌ Dock ${index + 1} In Use`}
             </Text>
           </TouchableOpacity>
         ))}

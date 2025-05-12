@@ -3,20 +3,23 @@ import {
   View,
   Text,
   TextInput,
-  StyleSheet,
   FlatList,
   TouchableOpacity,
   Alert,
+  StyleSheet,
+  Platform,
+  Linking,
+  Pressable
 } from "react-native";
 import MapView, { Marker, Region } from "react-native-maps";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import * as Location from "expo-location";
-import { Platform, Linking, Pressable } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../firebase";
 
+// Type definition for each station
 interface ChargingStation {
   id: string;
   name: string;
@@ -33,6 +36,7 @@ const Home = () => {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
+  // Search and region state
   const [searchQuery, setSearchQuery] = useState("");
   const [region, setRegion] = useState<Region>({
     latitude: -27.4698,
@@ -47,6 +51,7 @@ const Home = () => {
 
   const [chargingStations, setChargingStations] = useState<ChargingStation[]>([]);
 
+  // Fetch charging station data from Firestore
   useEffect(() => {
     const fetchStations = async () => {
       try {
@@ -75,15 +80,16 @@ const Home = () => {
     fetchStations();
   }, []);
 
+  // Get current location and address
   useEffect(() => {
     const getLocation = async () => {
       try {
         const { status, canAskAgain } = await Location.requestForegroundPermissionsAsync();
-  
+
         if (status === "granted") {
           const location = await Location.getCurrentPositionAsync({});
           const { latitude, longitude } = location.coords;
-  
+
           setRegion({
             latitude,
             longitude,
@@ -91,7 +97,7 @@ const Home = () => {
             longitudeDelta: 0.05,
           });
           setCurrentLocation({ latitude, longitude });
-  
+
           const [geo] = await Location.reverseGeocodeAsync({ latitude, longitude });
           setAddress(
             geo
@@ -99,31 +105,23 @@ const Home = () => {
               : "Unknown address"
           );
         } else if (!canAskAgain) {
-          Alert.alert(
-            "Location Blocked",
-            "Please enable location access in Settings to use this feature.",
-            [
-              { text: "Cancel", style: "cancel" },
-              { text: "Open Settings", onPress: () => Linking.openSettings() },
-            ]
-          );
+          Alert.alert("Location Blocked", "Please enable location access in Settings to use this feature.", [
+            { text: "Cancel", style: "cancel" },
+            { text: "Open Settings", onPress: () => Linking.openSettings() },
+          ]);
         } else {
-          Alert.alert(
-            "Permission Denied",
-            "We need location access to show nearby chargers."
-          );
+          Alert.alert("Permission Denied", "We need location access to show nearby chargers.");
         }
       } catch (err) {
         console.error("Location error:", err);
         Alert.alert("Error", "Unable to get your location.");
       }
     };
-  
+
     getLocation();
   }, []);
-  
-  
 
+  // Handle manual search and pin-drop
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;
 
@@ -132,14 +130,12 @@ const Home = () => {
       if (locations.length > 0) {
         const { latitude, longitude } = locations[0];
 
-        const newRegion = {
+        setRegion({
           latitude,
           longitude,
           latitudeDelta: 0.05,
           longitudeDelta: 0.05,
-        };
-
-        setRegion(newRegion);
+        });
         setSearchedLocation({ latitude, longitude });
 
         const geo = await Location.reverseGeocodeAsync({ latitude, longitude });
@@ -157,6 +153,7 @@ const Home = () => {
     }
   };
 
+  // Render individual station cards
   const renderStation = ({ item }: { item: ChargingStation }) => (
     <Pressable
       onPress={() => router.push(`/location/${item.id}`)}
@@ -167,27 +164,18 @@ const Home = () => {
         <Text style={styles.stationRating}>
           {item.rating} ⭐ ({item.reviews})
         </Text>
-        
       </View>
+
       <Text style={styles.stationStatus}>{item.status}</Text>
-      <Text
-        style={[
-          styles.stationAvailability,
-          { color: item.available ? "green" : "red" },
-        ]}
-      >
+      <Text style={[styles.stationAvailability, { color: item.available ? "green" : "red" }]}>
         {item.availability}
       </Text>
 
-  
       <View style={styles.stationActions}>
         <TouchableOpacity
-          style={[
-            styles.actionButton,
-            { backgroundColor: item.available ? "#28a745" : "#dc3545" },
-          ]}
+          style={[styles.actionButton, { backgroundColor: item.available ? "#28a745" : "#dc3545" }]}
           onPress={(e) => {
-            e.stopPropagation(); // Prevent triggering outer Pressable
+            e.stopPropagation(); // Prevent Pressable trigger
             router.push(`/location/checkIn?id=${item.id}`);
           }}
         >
@@ -195,11 +183,11 @@ const Home = () => {
             {item.available ? "Check In" : "Unavailable"}
           </Text>
         </TouchableOpacity>
-  
+
         <TouchableOpacity
           style={styles.actionButton}
           onPress={(e) => {
-            e.stopPropagation(); // Prevent triggering outer Pressable
+            e.stopPropagation(); // Prevent Pressable trigger
             const lat = item.latitude;
             const lng = item.longitude;
             const label = encodeURIComponent(item.name);
@@ -216,9 +204,9 @@ const Home = () => {
     </Pressable>
   );
 
-
   return (
     <SafeAreaView style={styles.container}>
+      {/* Search bar and settings icon */}
       <View style={[styles.overlayContainer, { top: insets.top + 10 }]}>
         <View style={styles.searchBar}>
           <TextInput
@@ -239,6 +227,7 @@ const Home = () => {
         </View>
       </View>
 
+      {/* Map rendering */}
       <MapView
         style={styles.map}
         region={region}
@@ -248,10 +237,7 @@ const Home = () => {
           station.latitude != null && station.longitude != null ? (
             <Marker
               key={station.id}
-              coordinate={{
-                latitude: station.latitude,
-                longitude: station.longitude,
-              }}
+              coordinate={{ latitude: station.latitude, longitude: station.longitude }}
               title={station.name}
               description={station.availability}
             />
@@ -259,22 +245,15 @@ const Home = () => {
         )}
 
         {currentLocation && (
-          <Marker
-            coordinate={currentLocation}
-            title="You Are Here"
-            pinColor="blue"
-          />
+          <Marker coordinate={currentLocation} title="You Are Here" pinColor="blue" />
         )}
 
         {searchedLocation && (
-          <Marker
-            coordinate={searchedLocation}
-            title="Searched Location"
-            pinColor="purple"
-          />
+          <Marker coordinate={searchedLocation} title="Searched Location" pinColor="purple" />
         )}
       </MapView>
 
+      {/* Address display */}
       {address !== "" && (
         <View style={styles.locationHeader}>
           <Text style={styles.locationTitle}>EV Chargers Near Me</Text>
@@ -282,6 +261,7 @@ const Home = () => {
         </View>
       )}
 
+      {/* Station List */}
       <FlatList
         style={{ flexGrow: 0 }}
         data={chargingStations}
@@ -292,6 +272,7 @@ const Home = () => {
     </SafeAreaView>
   );
 };
+
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#fff" },

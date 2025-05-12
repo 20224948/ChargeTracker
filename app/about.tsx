@@ -16,7 +16,7 @@ const About = () => {
 
   return (
     <View style={styles.container}>
-      {/* Banner Logo */}
+      {/* Top banner logo that navigates to home when pressed */}
       <TouchableOpacity
         style={styles.bannerContainer}
         activeOpacity={0.8}
@@ -28,6 +28,7 @@ const About = () => {
         />
       </TouchableOpacity>
 
+      {/* Ensures keyboard avoidance on iOS if needed */}
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={{ flex: 1 }}
@@ -35,7 +36,7 @@ const About = () => {
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <Text style={styles.settingsHeader}>About</Text>
 
-          {/* NAVIGATION: Settings | About */}
+          {/* Navigation tab buttons: switch between Settings and About pages */}
           <View style={styles.tabs}>
             <TouchableOpacity onPress={() => router.push("/settings")}>
               <Text style={styles.tab}>Settings</Text>
@@ -45,6 +46,7 @@ const About = () => {
             </TouchableOpacity>
           </View>
 
+          {/* Informational section displaying project/team info */}
           <View style={styles.form}>
             <View style={styles.row}>
               <Text style={styles.label}>Developed By:</Text>
@@ -60,7 +62,7 @@ const About = () => {
 
             <View style={styles.row}>
               <Text style={styles.label}>Last Update:</Text>
-              <Text style={styles.readOnlyValue}>25/04/2025</Text>
+              <Text style={styles.readOnlyValue}>12/05/2025</Text>
             </View>
 
             <View style={styles.row}>

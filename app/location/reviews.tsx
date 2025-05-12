@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
-  StyleSheet,
   Image,
   ScrollView,
   TouchableOpacity,
@@ -11,7 +10,8 @@ import {
   Pressable,
   Alert,
   Platform,
-  Linking
+  Linking,
+  StyleSheet,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import {
@@ -26,6 +26,7 @@ import {
 import { db } from "../../firebase";
 import { formatDistanceToNow } from "date-fns";
 
+// Firestore station structure
 interface Station {
   stationName: string;
   availableDocks: number;
@@ -44,22 +45,27 @@ interface Station {
 const ReviewsScreen = () => {
   const router = useRouter();
   const { id } = useLocalSearchParams();
+
   const [station, setStation] = useState<Station | null>(null);
   const [reviewList, setReviewList] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [showSortModal, setShowSortModal] = useState(false);
-  const [sortMode, setSortMode] = useState("timestamp_desc"); // default
+  const [sortMode, setSortMode] = useState("timestamp_desc"); // Default sort mode
 
+  // Fetch station info + sorted review list
   const fetchStationAndReviews = async (sort = sortMode) => {
     try {
       setLoading(true);
+
+      // Fetch station info
       const stationRef = doc(db, "chargingStations", id as string);
       const stationSnap = await getDoc(stationRef);
       if (stationSnap.exists()) {
         setStation(stationSnap.data() as Station);
       }
 
+      // Determine sorting
       let orderField = "timestamp";
       let direction: "asc" | "desc" = "desc";
 
@@ -73,46 +79,39 @@ const ReviewsScreen = () => {
         direction = "asc";
       }
 
+      // Query Firestore reviews for this station
       const q = query(
         collection(db, "reviews"),
         where("stationId", "==", id),
         orderBy(orderField, direction)
       );
+
       const querySnap = await getDocs(q);
+
+      // Enrich each review with the user's profile image
       const reviewsWithPhotos = await Promise.all(
-          querySnap.docs.map(async (docSnap) => {
-            const reviewData = docSnap.data() as {
-              userId: string;
-              userName: string;
-              rating: number;
-              text: string;
-              timestamp?: { seconds: number };
-              chargerTypeUsed?: string;
-              waitTime?: string;
-            };
+        querySnap.docs.map(async (docSnap) => {
+          const reviewData = docSnap.data();
+          let profileImageUrl = null;
 
-            let profileImageUrl = null
-
-            try {
-              const userRef = doc(db, "users", reviewData.userId);
-              const userSnap = await getDoc(userRef);
-              if (userSnap.exists()) {
-                const userData = userSnap.data() as {
-                  profileImageUrl?: string;
-                };
-                profileImageUrl = userData.profileImageUrl || null;
-              }
-            } catch (error) {
-              console.warn("Error fetching user photo", error);
+          try {
+            const userRef = doc(db, "users", reviewData.userId);
+            const userSnap = await getDoc(userRef);
+            if (userSnap.exists()) {
+              profileImageUrl = userSnap.data()?.profileImageUrl || null;
             }
+          } catch (error) {
+            console.warn("Error fetching user photo", error);
+          }
 
-            return {
-              id: docSnap.id,
-              ...reviewData,
-              profileImageUrl
-            };
-          })
+          return {
+            id: docSnap.id,
+            ...reviewData,
+            profileImageUrl,
+          };
+        })
       );
+
       setReviewList(reviewsWithPhotos);
     } catch (err) {
       console.error("Failed to load station or reviews:", err);
@@ -125,6 +124,7 @@ const ReviewsScreen = () => {
     if (id) fetchStationAndReviews();
   }, [id]);
 
+  // Triggered when a sort option is selected
   const handleSortChange = (option: string) => {
     setSortMode(option);
     setShowSortModal(false);
@@ -147,7 +147,7 @@ const ReviewsScreen = () => {
 
   return (
     <View style={styles.container}>
-      {/* Top Banner */}
+      {/* Logo banner */}
       <TouchableOpacity
         style={styles.bannerContainer}
         onPress={() => router.push("/home")}
@@ -159,7 +159,7 @@ const ReviewsScreen = () => {
       </TouchableOpacity>
 
       <ScrollView style={styles.detailsContainer}>
-        {/* Header */}
+        {/* Station header details */}
         <View style={styles.header}>
           <Text style={styles.stationName}>{station.stationName}</Text>
           <View style={styles.ratingContainer}>
@@ -176,7 +176,7 @@ const ReviewsScreen = () => {
           <Text style={styles.distance}>Type: {station.chargerTypes?.join(", ")}</Text>
         </View>
 
-        {/* Actions */}
+        {/* Station action buttons */}
         <View style={styles.actions}>
           <TouchableOpacity
             style={[styles.actionButton, styles.checkInButton]}
@@ -184,6 +184,7 @@ const ReviewsScreen = () => {
           >
             <Text style={styles.actionButtonText}>Check In</Text>
           </TouchableOpacity>
+
           <TouchableOpacity
             style={styles.actionButton}
             onPress={() => {
@@ -206,7 +207,7 @@ const ReviewsScreen = () => {
           </TouchableOpacity>
         </View>
 
-        {/* Tabs */}
+        {/* Tab navigation */}
         <View style={styles.tabs}>
           <TouchableOpacity onPress={() => router.push(`/location/chargingLocation?id=${id}`)}>
             <Text style={styles.tab}>Overview</Text>
@@ -216,12 +217,9 @@ const ReviewsScreen = () => {
           </TouchableOpacity>
         </View>
 
-        {/* Sort & Add */}
+        {/* Sort and Add Review controls */}
         <View style={styles.actions}>
-          <TouchableOpacity
-            style={styles.sortButton}
-            onPress={() => setShowSortModal(true)}
-          >
+          <TouchableOpacity style={styles.sortButton} onPress={() => setShowSortModal(true)}>
             <Text style={styles.actionButtonText}>Sort By</Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -232,7 +230,7 @@ const ReviewsScreen = () => {
           </TouchableOpacity>
         </View>
 
-        {/* Reviews */}
+        {/* Display Reviews */}
         {reviewList.length === 0 ? (
           <Text style={{ textAlign: "center", color: "#aaa", marginTop: 30 }}>
             No reviews yet.
@@ -243,7 +241,10 @@ const ReviewsScreen = () => {
               <View style={styles.reviewHeader}>
                 <Image
                   source={{
-                    uri: review.profileImageUrl || "https://img.icons8.com/color/96/user-male-circle--v1.png" }}
+                    uri:
+                      review.profileImageUrl ||
+                      "https://img.icons8.com/color/96/user-male-circle--v1.png",
+                  }}
                   style={styles.profilePicture}
                 />
                 <View>
@@ -260,7 +261,6 @@ const ReviewsScreen = () => {
               {review.chargerTypeUsed && (
                 <Text style={styles.metaText}>Charger Used: {review.chargerTypeUsed}</Text>
               )}
-
               {review.waitTime && (
                 <Text style={styles.metaText}>Wait Time: {review.waitTime}</Text>
               )}

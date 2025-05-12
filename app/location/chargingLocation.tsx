@@ -13,6 +13,7 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { doc, onSnapshot } from "firebase/firestore";
 import { db } from "../../firebase";
 
+// Helper function to open maps with given coordinates
 const openDirections = (latitude: number, longitude: number, name: string) => {
   const label = encodeURIComponent(name);
   const url = Platform.select({
@@ -24,11 +25,12 @@ const openDirections = (latitude: number, longitude: number, name: string) => {
 
 const ChargingLocation = () => {
   const router = useRouter();
-  const { id: locationId } = useLocalSearchParams();
+  const { id: locationId } = useLocalSearchParams(); // Get station ID from route
+
   const [station, setStation] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-
+  // Realtime listener to Firestore station document
   useEffect(() => {
     if (!locationId) return;
 
@@ -41,13 +43,15 @@ const ChargingLocation = () => {
       setLoading(false);
     });
 
-    return () => unsub();
+    return () => unsub(); // Cleanup listener on unmount
   }, [locationId]);
 
+  // Show loading spinner
   if (loading) {
     return <ActivityIndicator style={{ marginTop: 50 }} size="large" />;
   }
 
+  // Fallback if no station was found
   if (!station) {
     return (
       <View style={styles.container}>
@@ -60,18 +64,21 @@ const ChargingLocation = () => {
 
   return (
     <View style={styles.container}>
+      {/* Top banner/logo */}
       <TouchableOpacity
-          style={styles.bannerContainer}
-          activeOpacity={0.8}
-          onPress={() => router.push("/home")}
+        style={styles.bannerContainer}
+        activeOpacity={0.8}
+        onPress={() => router.push("/home")}
       >
         <Image
-            source={require("../../assets/images/chargeTrackerLogo.png")}
-            style={styles.bannerImage}
+          source={require("../../assets/images/chargeTrackerLogo.png")}
+          style={styles.bannerImage}
         />
       </TouchableOpacity>
 
+      {/* Scrollable content area for station details */}
       <ScrollView style={styles.detailsContainer}>
+        {/* Station header block with name, rating, status */}
         <View style={styles.header}>
           <Text style={styles.stationName}>{station.stationName}</Text>
           <View style={styles.ratingContainer}>
@@ -85,9 +92,12 @@ const ChargingLocation = () => {
           <Text style={styles.availability}>
             ⚡ {station.availableDocks} of {station.totalDocks} Docks Available
           </Text>
-          <Text style={styles.distance}>Type: {station.chargerTypes?.join(", ")}</Text>
+          <Text style={styles.distance}>
+            Type: {station.chargerTypes?.join(", ")}
+          </Text>
         </View>
 
+        {/* Action buttons: Check In and Directions */}
         <View style={styles.actions}>
           <TouchableOpacity
             style={[styles.actionButton, styles.checkInButton]}
@@ -97,12 +107,19 @@ const ChargingLocation = () => {
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.actionButton}
-            onPress={() => openDirections(station.coordinates.latitude, station.coordinates.longitude, station.stationName)}
+            onPress={() =>
+              openDirections(
+                station.coordinates.latitude,
+                station.coordinates.longitude,
+                station.stationName
+              )
+            }
           >
             <Text style={styles.actionButtonText}>Directions</Text>
           </TouchableOpacity>
         </View>
 
+        {/* Tabs for switching between Overview and Reviews */}
         <View style={styles.tabs}>
           <TouchableOpacity>
             <Text style={[styles.tab, styles.activeTab]}>Overview</Text>
@@ -112,6 +129,7 @@ const ChargingLocation = () => {
           </TouchableOpacity>
         </View>
 
+        {/* Additional Station Info */}
         <View style={styles.details}>
           <Text style={styles.detailText}>
             <Text style={styles.detailLabel}>Operator:</Text> Tesla
@@ -119,7 +137,6 @@ const ChargingLocation = () => {
           <Text style={styles.detailText}>
             <Text style={styles.detailLabel}>Address:</Text> {station.location}
           </Text>
-          
           <Text style={styles.detailText}>
             <Text style={styles.detailLabel}>Total Charging Stations:</Text> {station.totalDocks}
           </Text>
@@ -128,6 +145,7 @@ const ChargingLocation = () => {
           </Text>
         </View>
 
+        {/* Placeholder image for extra visual context */}
         <Image
           source={{ uri: "https://via.placeholder.com/400x200" }}
           style={styles.additionalImage}
@@ -136,6 +154,7 @@ const ChargingLocation = () => {
     </View>
   );
 };
+
 
 const styles = StyleSheet.create({
   bannerContainer: {

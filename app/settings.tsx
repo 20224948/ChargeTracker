@@ -16,35 +16,27 @@ import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
 import { useRouter } from "expo-router";
 import { auth, db, storage } from "../firebase";
-import {
-  onAuthStateChanged,
-  updatePassword,
-  signOut,
-} from "firebase/auth";
-import {
-  doc,
-  getDoc,
-  updateDoc,
-} from "firebase/firestore";
-import {
-  ref,
-  uploadBytes,
-  getDownloadURL
-} from 'firebase/storage';
-
+import { onAuthStateChanged, updatePassword, signOut } from "firebase/auth";
+import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 const Settings = () => {
   const router = useRouter();
+
+  // User data
   const [userId, setUserId] = useState<string | null>(null);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [vehicle, setVehicle] = useState("");
-  const [profileImage, setProfileImage] = useState<string | null>(null);
   const [chargerType, setChargerType] = useState("Type 2");
+  const [profileImage, setProfileImage] = useState<string | null>(null);
+
+  // Password modal
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
+  // Load authenticated user and their profile data
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
@@ -60,6 +52,7 @@ const Settings = () => {
           setProfileImage(data.profileImageUrl || null);
         }
       } else {
+        // Redirect to login if user not authenticated
         router.replace("/login");
       }
     });
@@ -67,6 +60,7 @@ const Settings = () => {
     return unsubscribe;
   }, []);
 
+  // Save profile updates to Firestore
   const handleSaveChanges = async () => {
     if (!userId) return;
     try {
@@ -87,9 +81,12 @@ const Settings = () => {
     }
   };
 
+  // Update password through Firebase Auth
   const handlePasswordChange = async () => {
-    if (newPassword !== confirmPassword)
+    if (newPassword !== confirmPassword) {
       return Alert.alert("Error", "Passwords do not match.");
+    }
+
     try {
       if (auth.currentUser) {
         await updatePassword(auth.currentUser, newPassword);
@@ -103,187 +100,214 @@ const Settings = () => {
     }
   };
 
+  // Logout and return to login screen
   const handleLogout = async () => {
     await signOut(auth);
     router.replace("/login");
   };
 
+  // Upload a compressed JPEG image to Firebase Storage
   const uploadImageAsync = async (imageUri: string): Promise<string | null> => {
     try {
-      console.log("Uploading with userId: ", userId);
-
-      // Convert images to JPEG format
-      const manipulated = await ImageManipulator.manipulateAsync(
-          imageUri,
-          [],
-          {
-            compress: 0.9,
-            format: ImageManipulator.SaveFormat.JPEG,
-          }
-      );
+      const manipulated = await ImageManipulator.manipulateAsync(imageUri, [], {
+        compress: 0.9,
+        format: ImageManipulator.SaveFormat.JPEG,
+      });
 
       const response = await fetch(manipulated.uri);
       const fileBlob = await response.blob();
 
       const filePath = `profileImages/${userId}/profile.jpg`;
-      console.log("Uploading to path: ", filePath);
-
       const storageRef = ref(storage, filePath);
-      const metadata = {contentType: 'image/jpeg',};
+      const metadata = { contentType: "image/jpeg" };
 
       await uploadBytes(storageRef, fileBlob, metadata);
       const downloadUrl = await getDownloadURL(storageRef);
-      console.log('Image uploaded successfully, download URL: ', downloadUrl);
       return downloadUrl;
     } catch (error: any) {
-      console.error('Upload failed: ', error);
       Alert.alert("Upload Error", error.message || "Upload failed.");
       return null;
     }
   };
 
-    const handleSelectProfileImage = async () => {
-      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!permission.granted) {
-        alert("Permission to access gallery is required!");
-        return;
+  // Pick an image from the device gallery and upload
+  const handleSelectProfileImage = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      alert("Permission to access gallery is required!");
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 1,
+    });
+
+    if (!result.canceled && userId) {
+      const downloadUrl = await uploadImageAsync(result.assets[0].uri);
+      if (downloadUrl) {
+        setProfileImage(downloadUrl);
+        await updateDoc(doc(db, "users", userId), {
+          profileImageUrl: downloadUrl,
+        });
       }
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 1,
-      });
-      if (!result.canceled && userId) {
-        console.log('Uploading with userId: ', userId);
-        const downloadUrl = await uploadImageAsync(result.assets[0].uri);
-        if (downloadUrl) {
-          setProfileImage(downloadUrl);
-          await updateDoc(doc(db, "users", userId), {profileImageUrl: downloadUrl});
-          }
-        }
+    }
   };
 
+  // Take a new photo using device camera and upload
   const handleCaptureProfileImage = async () => {
     const permission = await ImagePicker.requestCameraPermissionsAsync();
-    if (!permission.granted) return alert("Permission to access camera is required!");
+    if (!permission.granted) {
+      alert("Permission to access camera is required!");
+      return;
+    }
+
     const result = await ImagePicker.launchCameraAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [1, 1],
       quality: 1,
     });
+
     if (!result.canceled && userId) {
       const downloadUrl = await uploadImageAsync(result.assets[0].uri);
       if (downloadUrl) {
         setProfileImage(downloadUrl);
-        await updateDoc(doc(db, "users", userId), {profileImageUrl: downloadUrl});
+        await updateDoc(doc(db, "users", userId), {
+          profileImageUrl: downloadUrl,
+        });
       }
     }
   };
 
   return (
-      <View style={styles.container}>
-        <TouchableOpacity style={styles.bannerContainer} onPress={() => router.replace("/home")}>
-          <Image source={require("../assets/images/chargeTrackerLogo.png")} style={styles.bannerImage} />
-        </TouchableOpacity>
+    <View style={styles.container}>
+      {/* Top Banner */}
+      <TouchableOpacity style={styles.bannerContainer} onPress={() => router.replace("/home")}>
+        <Image source={require("../assets/images/chargeTrackerLogo.png")} style={styles.bannerImage} />
+      </TouchableOpacity>
 
-        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
-          <ScrollView contentContainerStyle={styles.scrollContent}>
-            <Text style={styles.settingsHeader}>Settings</Text>
+      {/* Scrollable Form Content */}
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          <Text style={styles.settingsHeader}>Settings</Text>
 
-            <View style={styles.profileImageContainer}>
-              {profileImage ? (
-                  <Image source={{ uri: profileImage }} style={styles.profileImage} />
-              ) : (
-                  <View style={styles.placeholderImage}>
-                    <Text style={styles.placeholderText}>No Image</Text>
-                  </View>
-              )}
-              <TouchableOpacity style={styles.profileButton} onPress={handleSelectProfileImage}>
-                <Text style={styles.uploadButtonText}>Upload Picture</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.profileButton} onPress={handleCaptureProfileImage}>
-                <Text style={styles.uploadButtonText}>Take Picture</Text>
-              </TouchableOpacity>
-
-            </View>
-
-            <View style={styles.form}>
-              <View style={styles.row}>
-                <Text style={styles.label}>Full Name:</Text>
-                <TextInput style={styles.input} value={fullName} onChangeText={setFullName} />
+          {/* Profile Image */}
+          <View style={styles.profileImageContainer}>
+            {profileImage ? (
+              <Image source={{ uri: profileImage }} style={styles.profileImage} />
+            ) : (
+              <View style={styles.placeholderImage}>
+                <Text style={styles.placeholderText}>No Image</Text>
               </View>
-              <View style={styles.row}>
-                <Text style={styles.label}>Email:</Text>
-                <TextInput style={styles.input} value={email} editable={false} />
-              </View>
-              <View style={styles.row}>
-                <Text style={styles.label}>Password:</Text>
-                <Text style={styles.passwordValue}>************</Text>
-                <TouchableOpacity style={styles.passwordButtonInline} onPress={() => setShowPasswordModal(true)}>
-                  <Text style={styles.passwordButtonText}>Change Password</Text>
-                </TouchableOpacity>
-              </View>
-              <View style={styles.row}>
-                <Text style={styles.label}>Vehicle Type:</Text>
-                <TextInput style={styles.input} value={vehicle} onChangeText={setVehicle} />
-              </View>
+            )}
 
-              <Text style={styles.sectionLabel}>Charger Type:</Text>
-              <View style={styles.radioContainer}>
-                {["CCS", "CHAdeMO", "Type 2"].map((type) => (
-                    <TouchableOpacity key={type} style={styles.radioOption} onPress={() => setChargerType(type)}>
-                      <View style={[styles.radioCircle, chargerType === type && styles.radioCircleSelected]} />
-                      <Text style={styles.radioLabel}>{type}</Text>
-                    </TouchableOpacity>
-                ))}
-              </View>
+            <TouchableOpacity style={styles.profileButton} onPress={handleSelectProfileImage}>
+              <Text style={styles.uploadButtonText}>Upload Picture</Text>
+            </TouchableOpacity>
 
-              <TouchableOpacity style={styles.saveButton} onPress={handleSaveChanges}>
-                <Text style={styles.saveButtonText}>Save Changes</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                  style={[styles.saveButton, { backgroundColor: "#dc3545", marginTop: 10 }]}
-                  onPress={handleLogout}
-              >
-                <Text style={styles.saveButtonText}>Logout</Text>
-              </TouchableOpacity>
-            </View>
-          </ScrollView>
-        </KeyboardAvoidingView>
-
-        <Modal animationType="slide" transparent visible={showPasswordModal} onRequestClose={() => setShowPasswordModal(false)}>
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Change Password</Text>
-              <TextInput
-                  placeholder="New Password"
-                  secureTextEntry
-                  style={styles.modalInput}
-                  value={newPassword}
-                  onChangeText={setNewPassword}
-              />
-              <TextInput
-                  placeholder="Confirm Password"
-                  secureTextEntry
-                  style={styles.modalInput}
-                  value={confirmPassword}
-                  onChangeText={setConfirmPassword}
-              />
-              <TouchableOpacity style={styles.saveButton} onPress={handlePasswordChange}>
-                <Text style={styles.saveButtonText}>Submit</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => setShowPasswordModal(false)}>
-                <Text style={{ color: "red", marginTop: 10, textAlign: "center" }}>Cancel</Text>
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity style={styles.profileButton} onPress={handleCaptureProfileImage}>
+              <Text style={styles.uploadButtonText}>Take Picture</Text>
+            </TouchableOpacity>
           </View>
-        </Modal>
-      </View>
+
+          {/* Form Fields */}
+          <View style={styles.form}>
+            <View style={styles.row}>
+              <Text style={styles.label}>Full Name:</Text>
+              <TextInput style={styles.input} value={fullName} onChangeText={setFullName} />
+            </View>
+
+            <View style={styles.row}>
+              <Text style={styles.label}>Email:</Text>
+              <TextInput style={styles.input} value={email} editable={false} />
+            </View>
+
+            <View style={styles.row}>
+              <Text style={styles.label}>Password:</Text>
+              <Text style={styles.passwordValue}>************</Text>
+              <TouchableOpacity
+                style={styles.passwordButtonInline}
+                onPress={() => setShowPasswordModal(true)}
+              >
+                <Text style={styles.passwordButtonText}>Change Password</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.row}>
+              <Text style={styles.label}>Vehicle Type:</Text>
+              <TextInput style={styles.input} value={vehicle} onChangeText={setVehicle} />
+            </View>
+
+            {/* Charger Type Selection */}
+            <Text style={styles.sectionLabel}>Charger Type:</Text>
+            <View style={styles.radioContainer}>
+              {["CCS", "CHAdeMO", "Type 2"].map((type) => (
+                <TouchableOpacity
+                  key={type}
+                  style={styles.radioOption}
+                  onPress={() => setChargerType(type)}
+                >
+                  <View style={[styles.radioCircle, chargerType === type && styles.radioCircleSelected]} />
+                  <Text style={styles.radioLabel}>{type}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* Save & Logout Buttons */}
+            <TouchableOpacity style={styles.saveButton} onPress={handleSaveChanges}>
+              <Text style={styles.saveButtonText}>Save Changes</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.saveButton, { backgroundColor: "#dc3545", marginTop: 10 }]}
+              onPress={handleLogout}
+            >
+              <Text style={styles.saveButtonText}>Logout</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+
+      {/* Password Change Modal */}
+      <Modal
+        animationType="slide"
+        transparent
+        visible={showPasswordModal}
+        onRequestClose={() => setShowPasswordModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Change Password</Text>
+            <TextInput
+              placeholder="New Password"
+              secureTextEntry
+              style={styles.modalInput}
+              value={newPassword}
+              onChangeText={setNewPassword}
+            />
+            <TextInput
+              placeholder="Confirm Password"
+              secureTextEntry
+              style={styles.modalInput}
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+            />
+            <TouchableOpacity style={styles.saveButton} onPress={handlePasswordChange}>
+              <Text style={styles.saveButtonText}>Submit</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setShowPasswordModal(false)}>
+              <Text style={{ color: "red", marginTop: 10, textAlign: "center" }}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+    </View>
   );
 };
+
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#fff" },

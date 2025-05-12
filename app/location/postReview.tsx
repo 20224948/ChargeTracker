@@ -24,6 +24,7 @@ import {
 
 const PostReview = () => {
   const { id: stationId } = useLocalSearchParams();
+
   const [station, setStation] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -33,6 +34,7 @@ const PostReview = () => {
   const [waitTime, setWaitTime] = useState<string | null>(null);
   const [reviewSubmitted, setReviewSubmitted] = useState(false);
 
+  // Fetch station info from Firestore
   useEffect(() => {
     const fetchStation = async () => {
       try {
@@ -51,6 +53,7 @@ const PostReview = () => {
     if (stationId) fetchStation();
   }, [stationId]);
 
+  // Generate star rating buttons
   const renderStars = () =>
     Array.from({ length: 5 }, (_, i) => i + 1).map((star) => (
       <TouchableOpacity key={star} onPress={() => setRating(star)}>
@@ -58,6 +61,7 @@ const PostReview = () => {
       </TouchableOpacity>
     ));
 
+  // Submit review and update average rating + review count
   const handlePostReview = async () => {
     try {
       const user = auth.currentUser;
@@ -67,6 +71,7 @@ const PostReview = () => {
       const userSnap = await getDoc(userRef);
       const userName = userSnap.data()?.fullName || "Anonymous";
 
+      // Add review to Firestore
       await addDoc(collection(db, "reviews"), {
         stationId,
         rating,
@@ -78,6 +83,7 @@ const PostReview = () => {
         waitTime,
       });
 
+      // Recalculate and update average rating and count
       const stationRef = doc(db, "chargingStations", stationId as string);
       const stationSnap = await getDoc(stationRef);
       const prevRating = stationSnap.data()?.rating || 0;
@@ -103,17 +109,19 @@ const PostReview = () => {
     }
   };
 
+  // Cancel and go back to reviews page
   const handleCancel = () => {
     router.replace(`/location/reviews?id=${stationId}`);
   };
 
+  // Show loading spinner
   if (loading) {
     return <ActivityIndicator style={{ marginTop: 50 }} size="large" />;
   }
 
   return (
     <ScrollView style={styles.container}>
-      {/* Top Banner */}
+      {/* App Banner */}
       <TouchableOpacity
         style={styles.bannerContainer}
         activeOpacity={0.8}
@@ -125,7 +133,7 @@ const PostReview = () => {
         />
       </TouchableOpacity>
 
-      {/* Station Info */}
+      {/* Station Info Section */}
       <View style={styles.header}>
         <Text style={styles.stationName}>{station?.stationName || "Station"}</Text>
         <View style={styles.ratingRow}>
@@ -139,10 +147,10 @@ const PostReview = () => {
         <Text style={styles.distance}>Type: {station.chargerTypes?.join(", ")}</Text>
       </View>
 
-      {/* Rating */}
+      {/* Star Rating Input */}
       <View style={styles.starContainer}>{renderStars()}</View>
 
-      {/* Review Input */}
+      {/* Review Text Area */}
       <TextInput
         style={styles.commentInput}
         placeholder="Choose a star rating first, then add a review."
@@ -152,7 +160,7 @@ const PostReview = () => {
         onChangeText={setComment}
       />
 
-      {/* Plug Type */}
+      {/* Plug Type Selection */}
       <Text style={styles.sectionLabel}>Which plug did you use?</Text>
       <View style={styles.plugContainer}>
         {station?.chargerTypes?.map((plug: string) => (
@@ -176,7 +184,7 @@ const PostReview = () => {
         ))}
       </View>
 
-      {/* Wait Time */}
+      {/* Wait Time Selection */}
       <Text style={styles.sectionLabel}>How long did you wait?</Text>
       <View style={styles.waitTimeContainer}>
         {["No Wait", "1-10 min", "10-20 min", "20+ min"].map((time) => (
@@ -209,12 +217,14 @@ const PostReview = () => {
         <Text style={styles.cancelButtonText}>Cancel</Text>
       </TouchableOpacity>
 
+      {/* Post-submission feedback (optional, currently unused) */}
       {reviewSubmitted && (
         <Text style={styles.thankYou}>Thank you for your review!</Text>
       )}
     </ScrollView>
   );
 };
+
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#fff" },
