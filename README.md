@@ -1,6 +1,21 @@
-# Welcome to your Charge Tracker app 👋
+# ⚡ Charge Tracker
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Charge Tracker is a mobile application built with [React Native](https://reactnative.dev/) and [Expo](https://expo.dev/) that helps EV users find, check in to, and review charging stations across Australia.
+
+<div align="center">
+  <img src="assets/images/chargeTrackerLogo.png" alt="Charge Tracker Logo" width="300" />
+</div>
+
+---
+
+## Features
+
+- Search for EV charging stations by area or current location
+- View station details including live availability, rating, and plug types
+- Check in / check out of docks in real-time
+- Leave reviews with rating, comment, plug type, and wait time
+- Profile image support for user reviews
+- Fully responsive UI, designed for mobile experience
 
 ## Get started
 
@@ -23,28 +38,19 @@ In the output, you'll find options to open the app in a
 - [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
 - [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+## Technologies Used
 
-## Get a fresh project
+- Expo
+- React Native
+- Firebase Firestore
+- Firebase Auth
+- Firebase Storage
+- React Native Maps
+- Expo Location
 
-When you're ready, run:
+## Team Members
 
-```bash
-npm run reset-project
-```
+- Peter Edwards
+- Mark Prado
+- Jamie Norton
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
