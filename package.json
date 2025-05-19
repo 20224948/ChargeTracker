@@ -12,7 +12,14 @@
     "lint": "npx expo lint"
   },
   "jest": {
-    "preset": "jest-expo"
+    "preset": "jest-expo",
+    "verbose": true,
+    "transformIgnorePatterns": [
+      "node_modules/(?!(jest-)?react-native|@react-native|expo|@expo|expo-router|@expo-router|firebase|@firebase)"
+    ],
+    "setupFilesAfterEnv": [
+      "@testing-library/jest-native/extend-expect"
+    ]
   },
   "dependencies": {
     "@expo/vector-icons": "^14.1.0",
