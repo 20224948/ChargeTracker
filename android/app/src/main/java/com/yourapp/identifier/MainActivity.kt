@@ -1,4 +1,4 @@
-package com.yourapp.identifier
+package com.chargetracker
 
 import android.os.Build
 import android.os.Bundle
