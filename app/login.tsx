@@ -166,7 +166,10 @@ const LoginScreen = () => {
         </TouchableOpacity>
 
         {/* Sign-in button */}
-        <TouchableOpacity style={styles.signInButton} onPress={handleLogin}>
+        <TouchableOpacity
+          style={styles.signInButton}
+          onPress={handleLogin}
+          >
           <Text style={styles.signInButtonText}>SIGN IN</Text>
         </TouchableOpacity>
 
