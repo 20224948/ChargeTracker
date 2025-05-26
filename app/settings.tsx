@@ -194,6 +194,16 @@ const Settings = () => {
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <Text style={styles.settingsHeader}>Settings</Text>
 
+          {/* Tabs */}
+          <View style={styles.tabs}>
+            <TouchableOpacity>
+              <Text style={[styles.tab, styles.activeTab]}>Settings</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => router.push("/about")}>
+              <Text style={styles.tab}>About</Text>
+            </TouchableOpacity>
+          </View>
+
           {/* Profile Image */}
           <View style={styles.profileImageContainer}>
             {profileImage ? (
@@ -456,6 +466,23 @@ const styles = StyleSheet.create({
     fontSize: 16,
     backgroundColor: "#fff",
     marginBottom: 10,
+  },
+  tabs: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    marginBottom: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: "#ccc",
+  },
+  tab: {
+    fontSize: 16,
+    color: "#555",
+    paddingBottom: 5,
+  },
+  activeTab: {
+    color: "#007BFF",
+    borderBottomWidth: 2,
+    borderBottomColor: "#007BFF",
   },
 });
 
